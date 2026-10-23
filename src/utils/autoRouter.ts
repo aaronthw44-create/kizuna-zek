@@ -15,7 +15,7 @@ export interface AutoRouteDecision {
  */
 function resolveAlibabaModelId(
   settings: AppSettings,
-  targetKey: 'max-0902' | 'kimi-k3' | 'flash' | '3.7-plus'
+  targetKey: 'max-0902' | '2.4-a95b' | 'kimi-k3' | 'flash' | '3.8-plus' | '3.7-plus'
 ): string {
   const fetched = Array.isArray(settings.fetchedAlibabaModels)
     ? settings.fetchedAlibabaModels.map((m) => m.id)
@@ -27,6 +27,12 @@ function resolveAlibabaModelId(
     const any38Max = fetched.find((id) => /qwen3\.8-max/i.test(id));
     if (any38Max) return any38Max;
     return 'qwen3.8-max-0902';
+  }
+
+  if (targetKey === '2.4-a95b') {
+    const exactA95b = fetched.find((id) => /a95b|2\.4-a95b/i.test(id));
+    if (exactA95b) return exactA95b;
+    return 'qwen3.8-2.4-a95b';
   }
 
   if (targetKey === 'kimi-k3') {
@@ -41,11 +47,15 @@ function resolveAlibabaModelId(
     return 'qwen3.8-flash';
   }
 
+  if (targetKey === '3.8-plus') {
+    const exact38Plus = fetched.find((id) => /^qwen3\.8-plus$/i.test(id));
+    if (exact38Plus) return exact38Plus;
+    return 'qwen3.8-plus';
+  }
+
   if (targetKey === '3.7-plus') {
     const exact37Plus = fetched.find((id) => /3\.7.*plus/i.test(id));
     if (exact37Plus) return exact37Plus;
-    const anyPlus = fetched.find((id) => /qwen3\.8-plus|qwen-plus/i.test(id));
-    if (anyPlus) return anyPlus;
     return 'qwen3.7-plus';
   }
 
@@ -54,7 +64,7 @@ function resolveAlibabaModelId(
 
 /**
  * Analyzes the user's message and attachments to automatically route the turn
- * between Qwen3.8-Max 0902, Kimi K3, Qwen3.8-Flash, and Qwen3.7-Plus.
+ * between Qwen3.8-Max 0902, Qwen3.8-2.4-A95b, Kimi K3, Qwen3.8-Plus, Qwen3.8-Flash, and Qwen3.7-Plus.
  */
 export function resolveAutoRoutedModel(
   userContent: string,
@@ -115,24 +125,54 @@ export function resolveAutoRoutedModel(
     };
   }
 
-  // 3. Creative Writing, Novel Chapters, Lore & Worldbuilding -> Qwen3.8-Max 0902
-  const creativeLorePattern =
-    /\b(escribe|redacta|narra|capítulo|capitulo|escena|diálogo|dialogo|prosa|novela|manuscrito|reescribe|continúa|continua|lore|bóveda|boveda|canon|kolder|hinistra|tedriot|teshuvana|monstereth|jukkou|zankyou|catarsis|skarnita|gurasha|personaje|ambientación|ambientacion|monólogo|monologo|relato)\b/i;
+  // 3. Complex Worldbuilding Mechanics, Factions, Multi-Character Dynamics & Dense Lore Architecture -> Qwen3.8-2.4-A95B
+  const moeArchitecturePattern =
+    /\b(a95b|sistema de magia|mecánica|mecanica|jerarquía|jerarquia|facciones|facción|faccion|política|politica|geopolítica|cronología|cronologia|línea temporal|linea temporal|árbol genealógico|batalla|combate|táctica|tactica|coreografía|coreografia|múltiples personajes|varios personajes|construcción de mundo|worldbuilding|skarnita|catarsis|red de relaciones|ecosistema|mitología|mitologia)\b/i;
 
-  if (creativeLorePattern.test(lower) || hasDocuments || charLen > 360 || wordCount > 65) {
+  if (moeArchitecturePattern.test(lower) || (charLen > 240 && /\b(lore|canon|bóveda|boveda|monstereth|teshuvana|tedriot)\b/i.test(lower) && !/\b(escribe el capítulo|redacta la escena)\b/i.test(lower))) {
+    return {
+      provider: defaultProvider === 'custom' && hasAlibabaKey ? 'alibaba' : defaultProvider,
+      modelId: resolveAlibabaModelId(settings, '2.4-a95b'),
+      modelLabel: 'Qwen 3.8 2.4-A95B',
+      reason: 'Modo Automático: Arquitectura de Lore, sistemas o dinámica compleja asignada a Qwen 3.8 2.4-A95B (MoE).',
+      recommendedReasoningMode: 'deep',
+    };
+  }
+
+  // 4. Creative Writing, Novel Chapters, Prose & Emotional Scenes -> Qwen3.8-Max 0902
+  const creativeProsePattern =
+    /\b(escribe|redacta|narra|capítulo|capitulo|escena|diálogo|dialogo|prosa|novela|manuscrito|reescribe|continúa|continua|kolder|hinistra|jukkou|zankyou|gurasha|monólogo|monologo|relato)\b/i;
+
+  if (creativeProsePattern.test(lower) || charLen > 420 || wordCount > 75) {
     return {
       provider: defaultProvider === 'custom' && hasAlibabaKey ? 'alibaba' : defaultProvider,
       modelId: resolveAlibabaModelId(settings, 'max-0902'),
       modelLabel: 'Qwen 3.8 Max 0902',
       reason:
-        charLen > 360 || hasDocuments
-          ? 'Modo Automático: Prompt extenso o con documento en contexto asignado a Qwen 3.8 Max 0902.'
-          : 'Modo Automático: Escritura literaria, escena o consulta de Lore asignada a Qwen 3.8 Max 0902.',
+        charLen > 420
+          ? 'Modo Automático: Prompt literario extenso asignado a Qwen 3.8 Max 0902.'
+          : 'Modo Automático: Redacción literaria, escena o diálogo asignado a Qwen 3.8 Max 0902.',
       recommendedReasoningMode: 'deep',
     };
   }
 
-  // 4. Fast / Short / Casual / Direct Queries -> Qwen3.8-Flash
+  // 5. Long Context Synthesis, Attached Documents, Character Sheets, Deep Summaries -> Qwen3.8-Plus
+  const plusSynthesisPattern =
+    /\b(ficha|perfil|resumen detallado|sintetiza|síntesis|sintesis|escaleta|estructura del arco|desglose|documentación|documentacion|contexto completo|explica en detalle|desarrolla)\b/i;
+
+  if (hasDocuments || plusSynthesisPattern.test(lower) || (charLen > 180 && charLen <= 420)) {
+    return {
+      provider: defaultProvider === 'custom' && hasAlibabaKey ? 'alibaba' : defaultProvider,
+      modelId: resolveAlibabaModelId(settings, '3.8-plus'),
+      modelLabel: 'Qwen 3.8 Plus',
+      reason: hasDocuments
+        ? 'Modo Automático: Documento adjunto en contexto (1M) asignado a Qwen 3.8 Plus.'
+        : 'Modo Automático: Síntesis estructurada o desarrollo de contexto asignado a Qwen 3.8 Plus.',
+      recommendedReasoningMode: 'light',
+    };
+  }
+
+  // 6. Fast / Short / Casual / Direct Queries -> Qwen3.8-Flash
   const fastQueryPattern =
     /\b(rápido|rapido|en corto|breve|dime rápido|hola|buenas|hey|gracias|ok|vale|listo|qué tal|que tal|cómo estás|como estas|buen día|buenas noches)\b/i;
 
@@ -150,12 +190,12 @@ export function resolveAutoRoutedModel(
     };
   }
 
-  // 5. Intermediate / Balanced Tasks (Brainstorming, Summaries, Outlines, Medium Prompts) -> Qwen3.7-Plus
+  // 7. Intermediate / Balanced Tasks (Brainstorming, Quick Outlines, General Questions) -> Qwen3.7-Plus
   return {
     provider: defaultProvider === 'custom' && hasAlibabaKey ? 'alibaba' : defaultProvider,
     modelId: resolveAlibabaModelId(settings, '3.7-plus'),
     modelLabel: 'Qwen 3.7 Plus',
-    reason: 'Modo Automático: Consulta de complejidad media o estructuración asignada a Qwen 3.7 Plus.',
+    reason: 'Modo Automático: Consulta balanceada o lluvia de ideas asignada a Qwen 3.7 Plus.',
     recommendedReasoningMode: 'light',
   };
 }

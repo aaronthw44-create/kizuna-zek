@@ -1866,7 +1866,9 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
             ? ['qwen3.8-plus', 'qwen-plus', 'qwen3.8-max']
             : requestedLower.includes('flash')
               ? ['qwen3.8-flash', 'qwen3.8-omni-flash', 'qwen-plus']
-              : ['qwen3.8-max', 'qwen-max', 'qwen-plus'];
+              : requestedLower.includes('a95b')
+                ? ['qwen3.8-max', 'qwen3.8-plus', 'qwen-plus']
+                : ['qwen3.8-max', 'qwen-max', 'qwen-plus'];
           const fallbackCandidates = tierFallbacks.filter((m) => m !== nvidiaPayload.model);
           const candidateUrls = [
             customTargetUrl,

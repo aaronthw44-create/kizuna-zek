@@ -467,11 +467,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const defaultAlibabaPresetModels: NvidiaModelItem[] = useMemo(() => [
     { id: 'qwen3.8-omni-flash', owned_by: 'Alibaba Singapur (Omni Multimodal • 1M Tokens • Ultra Económico)' },
     { id: 'kimi-k3', owned_by: 'Alibaba Singapur (1M Cuota Gratis • Tope de Seguridad Activo • 100K RPM)' },
+    { id: 'qwen3.8-max-0902', owned_by: 'Alibaba Singapur (Flagship 0902 con Thinking CoT Profundo)' },
+    { id: 'qwen3.8-2.4-a95b', owned_by: 'Alibaba Singapur (Arquitectura MoE A95B • Alta Densidad y CoT)' },
     { id: 'qwen3.8-max', owned_by: 'Alibaba Singapur (SOTA con Thinking CoT)' },
     { id: 'qwen3.8-flash', owned_by: 'Alibaba Singapur (1M Contexto • Ultra-rápido con Thinking)' },
     { id: 'qwen3.8-plus', owned_by: 'Alibaba Singapur (1M Contexto Extendido y Visión)' },
     { id: 'qwen3.6-plus', owned_by: 'Alibaba Singapur (Balance y Visión)' },
-    { id: 'qwen3.7-plus', owned_by: 'Alibaba Singapur (Versión 3.7)' },
+    { id: 'qwen3.7-plus', owned_by: 'Alibaba Singapur (Versión 3.7 Balanceada)' },
     { id: 'qwen-plus', owned_by: 'Alibaba Singapur (1M Contexto Extendido)' },
     { id: 'qwen-turbo', owned_by: 'Alibaba Singapur (1M Contexto • Baja Latencia)' },
     { id: 'qwen-max', owned_by: 'Alibaba Singapur (Razonamiento)' },
@@ -495,7 +497,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       return matchesSearch && matchesVision;
     });
 
-    const favSet = new Set(current.favoriteAlibabaModelIds || ['qwen3.8-omni-flash', 'qwen3.8-max', 'qwen3.8-flash', 'qwen3.8-plus', 'qwen-plus']);
+    const favSet = new Set(current.favoriteAlibabaModelIds || ['qwen3.8-max-0902', 'qwen3.8-2.4-a95b', 'qwen3.8-omni-flash', 'qwen3.8-max', 'qwen3.8-flash', 'qwen3.8-plus', 'qwen3.7-plus', 'qwen-plus']);
     const favs: NvidiaModelItem[] = [];
     const others: NvidiaModelItem[] = [];
 

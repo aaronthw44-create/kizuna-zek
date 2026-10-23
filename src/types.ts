@@ -74,6 +74,7 @@ export interface Message {
   cachedTokens?: number;
   modelName?: string;
   modelId?: string;
+  autoRouteReason?: string;
 }
 
 export interface Chat {
@@ -105,6 +106,7 @@ export interface NvidiaModelItem {
 
 export interface AppSettings {
   provider: 'gemini' | 'custom' | 'alibaba';
+  autoModelRouting?: boolean; // Modo Automático: alterna entre Qwen3.8-Max 0902, Kimi k3, Qwen3.8-Flash y Qwen3.7-Plus
   customApiKey: string; // NVIDIA NIM API key
   customBaseUrl: string; // default https://integrate.api.nvidia.com/v1
   customModel: string; // Dynamic model selected from fetched list

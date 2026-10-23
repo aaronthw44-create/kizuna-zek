@@ -99,6 +99,7 @@ export const INITIAL_LORE_FILES: LoreFile[] = [
 
 export const INITIAL_SETTINGS: AppSettings = {
   provider: 'gemini',
+  autoModelRouting: true,
   customApiKey: '',
   customBaseUrl: 'https://integrate.api.nvidia.com/v1',
   customModel: '',

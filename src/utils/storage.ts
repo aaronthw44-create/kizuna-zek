@@ -138,6 +138,7 @@ export function loadSettings(): AppSettings {
         : (parsed.alibabaModel === 'qwen-3.8-flash' ? 'qwen3.8-flash' : parsed.alibabaModel === 'kimi/kimi-k3' ? 'kimi-k3' : parsed.alibabaModel),
       alibabaCustomLoraModel: typeof parsed.alibabaCustomLoraModel === 'string' ? parsed.alibabaCustomLoraModel : '',
       alibabaCustomLoraName: typeof parsed.alibabaCustomLoraName === 'string' ? parsed.alibabaCustomLoraName : '',
+      autoModelRouting: typeof parsed.autoModelRouting === 'boolean' ? parsed.autoModelRouting : true,
       maxOutputTokens: (!parsed.maxOutputTokens || parsed.maxOutputTokens <= 1500) ? 8192 : parsed.maxOutputTokens,
     };
   } catch (e) {

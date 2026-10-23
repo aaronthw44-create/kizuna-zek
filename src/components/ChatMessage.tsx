@@ -891,9 +891,15 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
             <div className="space-y-3">
               {/* Indicador en vivo durante el pensamiento */}
               {!isUser && message.isStreaming && isThinking && (
-                <div className="flex items-center gap-2 py-1.5 text-xs text-zinc-400 font-mono animate-pulse select-none">
+                <div className="flex items-center gap-2 flex-wrap py-1.5 text-xs text-zinc-400 font-mono animate-pulse select-none">
                   <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,210,255,0.8)]" />
                   <span>{getThinkingStatusText(editContent || '', Boolean(message.webSearch || message.webSearchSources?.length), thinkingSeconds)}</span>
+                  {(message.modelName || message.modelId) && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-semibold">
+                      <span>✦</span>
+                      <span>{message.modelName || message.modelId}</span>
+                    </span>
+                  )}
                   <span className="text-zinc-500 font-mono text-[11px]">({thinkingSeconds.toFixed(1)}s)</span>
                 </div>
               )}
@@ -958,17 +964,25 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
               )}
 
               {/* Bitácora de razonamiento colapsable al pie de la respuesta */}
-              {!isUser && !message.isStreaming && hasThoughts && (
+              {!isUser && !message.isStreaming && (hasThoughts || Boolean(message.autoRouteReason)) && (
                 <div className="mt-4 pt-2 border-t border-zinc-200/60 dark:border-zinc-800/40">
                   <button
                     type="button"
                     onClick={() => setIsThoughtOpen((prev) => !prev)}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono text-zinc-700 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 bg-zinc-100 dark:bg-zinc-900/60 hover:bg-zinc-200 dark:hover:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 transition-colors cursor-pointer select-none"
+                    className="inline-flex items-center gap-2 flex-wrap px-3 py-1.5 min-h-[36px] rounded-xl text-xs font-mono text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-900/60 hover:bg-zinc-200 dark:hover:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 transition-colors cursor-pointer select-none"
                   >
-                    <span className="text-orange-500">✦</span>
+                    <span className="text-orange-500">💧</span>
                     <span>
-                      {isThoughtOpen ? 'Ocultar proceso de razonamiento' : `Ver proceso de razonamiento · ${thinkingDuration.toFixed(1)}s`}
+                      {isThoughtOpen
+                        ? 'Ocultar pensamiento'
+                        : `Pensado durante ${thinkingDuration.toFixed(1)}s`}
                     </span>
+                    {(message.modelName || message.modelId) && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/35 text-amber-700 dark:text-amber-300 text-[10px] font-semibold">
+                        <span>✦</span>
+                        <span>{message.modelName || message.modelId}</span>
+                      </span>
+                    )}
                     <ChevronDown
                       size={13}
                       className={`transition-transform duration-200 ${isThoughtOpen ? 'rotate-180' : ''}`}
@@ -981,16 +995,29 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                       className="mt-2.5 p-4 rounded-2xl bg-zinc-100 dark:bg-[#151518] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-200 shadow-xl space-y-3.5 select-text font-sans"
                     >
                       <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/5 pb-2">
-                        <span className="text-[11px] font-mono text-zinc-600 dark:text-zinc-400 font-medium">Pasos de pensamiento</span>
+                        <span className="text-[11px] font-mono text-zinc-600 dark:text-zinc-400 font-medium">
+                          Proceso de pensamiento · {message.modelName || message.modelId || 'Modelo Activo'}
+                        </span>
                         <span className="text-[10px] font-mono text-zinc-500">{thinkingDuration.toFixed(1)}s</span>
                       </div>
 
                       {/* Línea de tiempo vertical con las etapas */}
                       <div className="relative pl-3.5 border-l-2 border-orange-500/40 dark:border-zinc-700/60 space-y-3 my-1">
+                        {message.autoRouteReason && (
+                          <div className="space-y-1 pb-2 border-b border-zinc-200/60 dark:border-white/5">
+                            <h4 className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                              <span>✦</span>
+                              <span>Enrutador Inteligente (Modo Automático)</span>
+                            </h4>
+                            <p className="text-[12px] text-zinc-700 dark:text-zinc-300 leading-relaxed font-mono">
+                              {message.autoRouteReason}
+                            </p>
+                          </div>
+                        )}
                         <div className="space-y-1">
                           <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">Revisión de Contexto y Directivas</h4>
                           <p className="text-[12px] text-zinc-600 dark:text-zinc-400 leading-relaxed italic whitespace-pre-wrap max-h-60 overflow-y-auto">
-                            {thoughtContent || "Evaluando el tono somático, registros de lore y continuidad de la escena..."}
+                            {thoughtContent || message.autoRouteReason || "Evaluando el tono somático, registros de lore y continuidad de la escena..."}
                           </p>
                         </div>
                       </div>
@@ -1001,9 +1028,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                           <span>✓</span>
                           <span>Listo</span>
                         </div>
-                        <div className="flex items-center gap-1 text-orange-500">
+                        <div className="flex items-center gap-1 text-orange-500 font-semibold">
                           <span>✦</span>
-                          <span>{message.modelName || message.modelId || "Stepfun 5"}</span>
+                          <span>{message.modelName || message.modelId || "Qwen 3.8 Max 0902"}</span>
                         </div>
                       </div>
                     </div>

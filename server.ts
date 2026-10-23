@@ -1859,9 +1859,15 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
           }
         }
 
-        // Auto-recovery 4: If target model is not found or not authorized on this endpoint, try reliable Singapore Qwen models across both endpoints
+        // Auto-recovery 4: If target model is not found or not authorized on this endpoint, try tier-matched Singapore Qwen models across both endpoints
         if (!response.ok && (response.status === 404 || response.status === 403 || response.status === 400) && /model_not_found|Model not exist|Access to model denied|Workspace endpoint access denied|ModelNotOpen|does not exist/i.test(errorBody) && isAlibaba) {
-          const fallbackCandidates = ['qwen3.8-max', 'qwen-plus', 'qwen-max'].filter((m) => m !== nvidiaPayload.model);
+          const requestedLower = String(nvidiaPayload.model || '').toLowerCase();
+          const tierFallbacks = requestedLower.includes('plus')
+            ? ['qwen3.8-plus', 'qwen-plus', 'qwen3.8-max']
+            : requestedLower.includes('flash')
+              ? ['qwen3.8-flash', 'qwen3.8-omni-flash', 'qwen-plus']
+              : ['qwen3.8-max', 'qwen-max', 'qwen-plus'];
+          const fallbackCandidates = tierFallbacks.filter((m) => m !== nvidiaPayload.model);
           const candidateUrls = [
             customTargetUrl,
             `${customBaseUrl.includes('.maas.aliyuncs.com') ? intlAlibabaUrl : wsAlibabaUrl}/chat/completions`,

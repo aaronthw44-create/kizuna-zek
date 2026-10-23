@@ -34,6 +34,7 @@ import { exportChatToEpub } from './utils/epubExporter';
 import { detectSmartMemory, createMemoryObject, buildRollingSessionSummary, synthesizeSessionSummaryWithAI } from './utils/memoryDetector';
 import { estimateTokenCount } from './utils/documentParser';
 import { isVisionModel, clampMaxTokensForModel } from './utils/modelHelper';
+import { resolveAutoRoutedModel } from './utils/autoRouter';
 import { executeDirectApiStream } from './utils/directApiStream';
 import {
   requestScreenWakeLock,
@@ -1136,10 +1137,73 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
 
     let assistantPlaceholderId = targetAssistantMessageId || `msg_${Date.now()}_a`;
     let messagesPayload: Message[] = [];
-    const currentModelId = settings.provider === 'gemini' ? settings.geminiModel : (settings.customModel || 'moonshotai/kimi-k3');
-    const isReasoningModel = settings.provider === 'gemini' || /kimi|moonshot|glm|cot|reason|r1|gemini|step|stepfun/i.test(currentModelId);
-    const isCasual = isCasualGreeting(userContent.trim());
+
+    // Resolve user prompt & attachments for this turn (accounting for regenerate)
+    let effectivePromptForRouting = userContent;
+    let effectiveAttsForRouting = attachments;
+    if (isRegenerate) {
+      for (let i = activeChat.messages.length - 1; i >= 0; i--) {
+        if (activeChat.messages[i].role === 'user') {
+          effectivePromptForRouting = activeChat.messages[i].content;
+          effectiveAttsForRouting = activeChat.messages[i].attachments || [];
+          break;
+        }
+      }
+    }
+
     const isVoiceCallTurn = Boolean(voiceReplyCallbackRef.current);
+    const autoRouteDecision =
+      settings.autoModelRouting && !isVoiceCallTurn
+        ? resolveAutoRoutedModel(
+            effectivePromptForRouting,
+            effectiveAttsForRouting,
+            settings,
+            isContinuationTurn
+          )
+        : null;
+
+    const effectiveTurnProvider: 'gemini' | 'custom' | 'alibaba' = autoRouteDecision
+      ? autoRouteDecision.provider
+      : settings.provider;
+
+    const manualModelId =
+      settings.provider === 'gemini'
+        ? settings.geminiModel
+        : settings.provider === 'alibaba'
+          ? (settings.alibabaModel || 'qwen3.8-max')
+          : (settings.customModel || 'moonshotai/kimi-k3');
+
+    const effectiveTurnModelId = autoRouteDecision ? autoRouteDecision.modelId : manualModelId;
+
+    const formatModelDisplayName = (modelId: string): string => {
+      if (modelId.includes('qwen3.8-max-0902') || modelId.includes('0902')) return 'Qwen 3.8 Max 0902';
+      if (modelId.includes('qwen3.7-plus') || modelId.includes('3.7-plus')) return 'Qwen 3.7 Plus';
+      if (modelId.includes('qwen3.8-omni-flash') || modelId.includes('qwen-3.8-omni-flash') || modelId.includes('omni')) return 'Qwen 3.8 Omni Flash';
+      if (modelId.includes('qwen3.8-plus') || modelId.includes('qwen-plus')) return 'Qwen 3.8 Plus (1M)';
+      if (modelId.includes('qwen3.8-max') || modelId.includes('qwen-3.8-max')) return 'Qwen 3.8 Max';
+      if (modelId.includes('qwen3.8-flash') || modelId.includes('qwen-3.8-flash')) return 'Qwen 3.8 Flash';
+      if (modelId.includes('deepseek-k3')) return 'DeepSeek K3';
+      if (modelId.includes('deepseek-v3')) return 'DeepSeek V3';
+      if (modelId.includes('kimi-k3') || modelId.includes('moonshot')) return 'Kimi K3';
+      if (modelId.includes('gemini-3.8-flash')) return 'Gemini 3.8 Flash';
+      if (modelId.includes('gemini-3.6-flash')) return 'Gemini 3.6 Flash';
+      if (modelId.includes('glm-5.3-flash')) return 'GLM 5.3-Flash';
+      if (modelId.includes('glm-5.3')) return 'GLM 5.3';
+      if (modelId.includes('llama-3.3-70b')) return 'Llama 3.3 70B';
+      if (modelId.includes('gemini-3.1-pro')) return 'Gemini 3.1 Pro';
+      if (modelId.includes('/')) return modelId.split('/').pop() || modelId;
+      return modelId;
+    };
+
+    const effectiveTurnModelLabel = autoRouteDecision
+      ? autoRouteDecision.modelLabel
+      : formatModelDisplayName(effectiveTurnModelId);
+    const effectiveAutoRouteReason = autoRouteDecision?.reason;
+
+    const isReasoningModel =
+      effectiveTurnProvider === 'gemini' ||
+      /kimi|moonshot|glm|cot|reason|r1|gemini|step|stepfun|qwen3\.8|qwen3\.7/i.test(effectiveTurnModelId);
+    const isCasual = isCasualGreeting(effectivePromptForRouting.trim());
     const userRequestedReasoning = settings.reasoningMode
       ? settings.reasoningMode !== 'off'
       : (settings.enableReasoning ?? true);
@@ -1147,7 +1211,9 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
     const isReasoningTarget = !isCasual && !isVoiceCallTurn && userRequestedReasoning;
     const targetReasoningMode: 'off' | 'light' | 'deep' = (isCasual || isVoiceCallTurn)
       ? 'off'
-      : (settings.reasoningMode || (settings.enableReasoning === false ? 'off' : 'light'));
+      : autoRouteDecision && settings.reasoningMode !== 'off'
+        ? autoRouteDecision.recommendedReasoningMode
+        : (settings.reasoningMode || (settings.enableReasoning === false ? 'off' : 'light'));
     const thinkingBudget = targetReasoningMode === 'off' ? 0 : targetReasoningMode === 'light' ? 1024 : 4096;
 
     if (isRegenerate) {
@@ -1175,38 +1241,6 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
       const newVariantIndex = priorVariants.length;
       const updatedVariants = [...priorVariants, ''];
 
-      const activeModelId = settings.provider === 'gemini'
-        ? settings.geminiModel
-        : settings.provider === 'alibaba'
-          ? (settings.alibabaModel || 'qwen3.8-max')
-          : (settings.customModel || 'moonshotai/kimi-k3');
-      let activeModelLabel = activeModelId;
-      if (activeModelId.includes('qwen3.8-max') || activeModelId.includes('qwen-3.8-max')) {
-        activeModelLabel = 'Qwen 3.8 Max';
-      } else if (activeModelId.includes('qwen3.8-flash') || activeModelId.includes('qwen-3.8-flash')) {
-        activeModelLabel = 'Qwen 3.8 Flash';
-      } else if (activeModelId.includes('deepseek-k3')) {
-        activeModelLabel = 'DeepSeek K3';
-      } else if (activeModelId.includes('deepseek-v3')) {
-        activeModelLabel = 'DeepSeek V3';
-      } else if (activeModelId.includes('kimi-k3') || activeModelId.includes('moonshot')) {
-        activeModelLabel = 'Kimi K3';
-      } else if (activeModelId.includes('gemini-3.8-flash')) {
-        activeModelLabel = 'Gemini 3.8 Flash';
-      } else if (activeModelId.includes('gemini-3.6-flash')) {
-        activeModelLabel = 'Gemini 3.6 Flash';
-      } else if (activeModelId.includes('glm-5.3-flash')) {
-        activeModelLabel = 'GLM 5.3-Flash';
-      } else if (activeModelId.includes('glm-5.3')) {
-        activeModelLabel = 'GLM 5.3';
-      } else if (activeModelId.includes('llama-3.3-70b')) {
-        activeModelLabel = 'Llama 3.3 70B';
-      } else if (activeModelId.includes('gemini-3.1-pro')) {
-        activeModelLabel = 'Gemini 3.1 Pro';
-      } else if (activeModelId.includes('/')) {
-        activeModelLabel = activeModelId.split('/').pop() || activeModelId;
-      }
-
       const assistantMessage: Message = {
         id: assistantPlaceholderId,
         role: 'assistant',
@@ -1218,8 +1252,9 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
         variants: updatedVariants,
         activeVariantIndex: newVariantIndex,
         selectedLoreIds: activeChat.selectedLoreFileIds,
-        modelName: activeModelLabel,
-        modelId: activeModelId,
+        modelName: effectiveTurnModelLabel,
+        modelId: effectiveTurnModelId,
+        autoRouteReason: effectiveAutoRouteReason,
       };
 
       // CRITICAL FIX: Define messagesWithoutTrailing properly so it never throws ReferenceError
@@ -1255,42 +1290,6 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
         estimatedTokens: estimateTokenCount(cleanUserPrompt),
       };
 
-      const activeModelId = settings.provider === 'gemini'
-        ? settings.geminiModel
-        : settings.provider === 'alibaba'
-          ? (settings.alibabaModel || 'qwen3.8-max')
-          : (settings.customModel || 'moonshotai/kimi-k3');
-      let activeModelLabel = activeModelId;
-      if (activeModelId.includes('qwen3.8-omni-flash') || activeModelId.includes('qwen-3.8-omni-flash') || activeModelId.includes('omni')) {
-        activeModelLabel = 'Qwen 3.8 Omni Flash';
-      } else if (activeModelId.includes('qwen3.8-plus') || activeModelId.includes('qwen-plus')) {
-        activeModelLabel = 'Qwen 3.8 Plus (1M)';
-      } else if (activeModelId.includes('qwen3.8-max') || activeModelId.includes('qwen-3.8-max')) {
-        activeModelLabel = 'Qwen 3.8 Max';
-      } else if (activeModelId.includes('qwen3.8-flash') || activeModelId.includes('qwen-3.8-flash')) {
-        activeModelLabel = 'Qwen 3.8 Flash';
-      } else if (activeModelId.includes('deepseek-k3')) {
-        activeModelLabel = 'DeepSeek K3';
-      } else if (activeModelId.includes('deepseek-v3')) {
-        activeModelLabel = 'DeepSeek V3';
-      } else if (activeModelId.includes('kimi-k3') || activeModelId.includes('moonshot')) {
-        activeModelLabel = 'Kimi K3';
-      } else if (activeModelId.includes('gemini-3.8-flash')) {
-        activeModelLabel = 'Gemini 3.8 Flash';
-      } else if (activeModelId.includes('gemini-3.6-flash')) {
-        activeModelLabel = 'Gemini 3.6 Flash';
-      } else if (activeModelId.includes('glm-5.3-flash')) {
-        activeModelLabel = 'GLM 5.3-Flash';
-      } else if (activeModelId.includes('glm-5.3')) {
-        activeModelLabel = 'GLM 5.3';
-      } else if (activeModelId.includes('llama-3.3-70b')) {
-        activeModelLabel = 'Llama 3.3 70B';
-      } else if (activeModelId.includes('gemini-3.1-pro')) {
-        activeModelLabel = 'Gemini 3.1 Pro';
-      } else if (activeModelId.includes('/')) {
-        activeModelLabel = activeModelId.split('/').pop() || activeModelId;
-      }
-
       const assistantMessage: Message = {
         id: assistantPlaceholderId,
         role: 'assistant',
@@ -1301,8 +1300,9 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
         isThinking: false,
         webSearch: activeWebSearch,
         selectedLoreIds: activeChat.selectedLoreFileIds,
-        modelName: activeModelLabel,
-        modelId: activeModelId,
+        modelName: effectiveTurnModelLabel,
+        modelId: effectiveTurnModelId,
+        autoRouteReason: effectiveAutoRouteReason,
       };
 
       // Ventana Deslizante + Libretita de Resumen Automático (Rolling Session Summary)
@@ -1487,18 +1487,18 @@ REGLAS DEL TALLER:
         loreStatusInstruction +
         sessionSummaryBlock;
 
-    // Auto-clamp max tokens safeguard based on active model, limitado a un máximo de 1500 tokens para ahorrar cuota
-    const rawAlibabaModel = settings.alibabaModel || 'qwen3.8-max';
+    // Auto-clamp max tokens safeguard based on active model
+    const rawAlibabaModel = effectiveTurnProvider === 'alibaba' ? effectiveTurnModelId : (settings.alibabaModel || 'qwen3.8-max');
     const cleanAlibabaModel = /llama|nemotron|nvdev|mistralai|meta\/|qwen-long/i.test(rawAlibabaModel)
       ? 'qwen3.8-omni-flash'
       : rawAlibabaModel;
 
     const targetModelId =
-      settings.provider === 'alibaba'
+      effectiveTurnProvider === 'alibaba'
         ? cleanAlibabaModel
-        : settings.provider === 'custom'
-          ? settings.customModel
-          : settings.geminiModel;
+        : effectiveTurnProvider === 'custom'
+          ? effectiveTurnModelId
+          : effectiveTurnModelId;
     const safeOutputTokens = isVoiceCallTurn
       ? 320
       : clampMaxTokensForModel(
@@ -1765,23 +1765,21 @@ REGLAS DEL TALLER:
             memories: settings.enableMemoryToggle === false ? [] : settings.memories,
             userProfile: settings.userProfile,
             personalityConfig: settings.personalityConfig,
-            provider: settings.provider,
+            provider: effectiveTurnProvider,
             customConfig: {
-              apiKey: settings.provider === 'gemini' 
+              apiKey: effectiveTurnProvider === 'gemini' 
                 ? (settings.geminiApiKey || getGeminiApiKey()) 
-                : settings.provider === 'alibaba'
+                : effectiveTurnProvider === 'alibaba'
                   ? (settings.alibabaApiKey || '')
                   : (settings.customApiKey || getNvidiaApiKey()),
               geminiApiKey: settings.geminiApiKey || getGeminiApiKey(),
               alibabaApiKey: settings.alibabaApiKey || '',
               alibabaBaseUrl: settings.alibabaBaseUrl,
-              alibabaModel: settings.alibabaModel,
-              baseUrl: settings.provider === 'alibaba'
+              alibabaModel: effectiveTurnProvider === 'alibaba' ? targetModelId : settings.alibabaModel,
+              baseUrl: effectiveTurnProvider === 'alibaba'
                 ? (settings.alibabaBaseUrl || 'https://ws-sitvcc6ml5lia10m.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1')
                 : settings.customBaseUrl,
-              model: settings.provider === 'alibaba'
-                ? (settings.alibabaModel || 'qwen3.8-max')
-                : settings.customModel,
+              model: targetModelId,
               tavilyApiKey: cleanApiKey(settings.tavilyApiKey) || getTavilyApiKey(),
             },
             maxOutputTokens: safeOutputTokens,
@@ -1945,19 +1943,20 @@ REGLAS DEL TALLER:
           userProfile: settings.userProfile,
           personalityConfig: settings.personalityConfig,
           isWebSearchEnabled: activeWebSearch,
-          provider: settings.provider,
+          provider: effectiveTurnProvider,
           customConfig: {
-            apiKey: settings.provider === 'gemini' 
+            apiKey: effectiveTurnProvider === 'gemini' 
               ? (settings.geminiApiKey || getGeminiApiKey()) 
-              : settings.provider === 'alibaba'
+              : effectiveTurnProvider === 'alibaba'
                 ? (settings.alibabaApiKey || '')
                 : (settings.customApiKey || getNvidiaApiKey()),
-            baseUrl: settings.provider === 'alibaba'
+            alibabaApiKey: settings.alibabaApiKey || '',
+            alibabaBaseUrl: settings.alibabaBaseUrl,
+            alibabaModel: effectiveTurnProvider === 'alibaba' ? targetModelId : settings.alibabaModel,
+            baseUrl: effectiveTurnProvider === 'alibaba'
               ? (settings.alibabaBaseUrl || 'https://ws-sitvcc6ml5lia10m.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1')
               : settings.customBaseUrl,
-            model: settings.provider === 'alibaba'
-              ? (settings.alibabaModel || 'qwen3.8-max')
-              : settings.customModel,
+            model: targetModelId,
           },
           maxOutputTokens: safeOutputTokens,
           temperature: settings.temperature,
@@ -2964,6 +2963,7 @@ Ofrece un diagnóstico estructurado y recomendaciones de mejora de diseño.`;
             setSettings(prev => {
               const updated = {
                 ...prev,
+                autoModelRouting: false,
                 provider: prov,
                 ...(prov === 'gemini' 
                   ? { geminiModel: mod } 
@@ -2978,6 +2978,21 @@ Ofrece un diagnóstico estructurado y recomendaciones de mejora de diseño.`;
                   : prov === 'alibaba'
                     ? `Cambiado a Alibaba Cloud (${mod})`
                     : `Cambiado a NVIDIA NIM (${mod})`
+              );
+              return updated;
+            });
+          }}
+          onToggleAutoRouting={(enabled) => {
+            setSettings((prev) => {
+              const updated: AppSettings = {
+                ...prev,
+                autoModelRouting: enabled,
+              };
+              saveSettings(updated);
+              showToast(
+                enabled
+                  ? '✦ Modo Automático activado (Qwen 3.8 Max 0902 · Kimi K3 · Flash · 3.7 Plus)'
+                  : 'Modo Automático desactivado (Selección manual)'
               );
               return updated;
             });

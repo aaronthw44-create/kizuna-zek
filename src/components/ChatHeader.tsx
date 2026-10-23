@@ -41,6 +41,7 @@ interface ChatHeaderProps {
   settings?: AppSettings;
   currentProvider?: 'gemini' | 'custom' | 'alibaba';
   onSelectQuickModel?: (provider: 'gemini' | 'custom' | 'alibaba', model: string) => void;
+  onToggleAutoRouting?: (enabled: boolean) => void;
   onUpdateProvider?: (provider: 'gemini' | 'custom' | 'alibaba', model: string) => void;
   isZenMode?: boolean;
   isAuditingLore?: boolean;
@@ -79,6 +80,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   settings,
   currentProvider = 'gemini',
   onSelectQuickModel,
+  onToggleAutoRouting,
   onUpdateProvider,
   isZenMode = false,
   isAuditingLore = false,
@@ -355,23 +357,50 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         <button
           type="button"
           onClick={() => setIsModelMenuOpen((prev) => !prev)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 min-h-[44px] rounded-xl text-xs font-mono bg-zinc-100 dark:bg-[#141418] border border-zinc-300 dark:border-[#27272c] text-zinc-800 dark:text-zinc-200 hover:text-black dark:hover:text-white transition-all cursor-pointer select-none active:scale-95"
-          title="Cambiar modelo activo"
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 min-h-[44px] rounded-xl text-xs font-mono border transition-all cursor-pointer select-none active:scale-95 ${
+            settings?.autoModelRouting
+              ? 'bg-amber-500/10 dark:bg-[#161410] border-amber-500/40 text-amber-300 hover:border-amber-400'
+              : 'bg-zinc-100 dark:bg-[#141418] border-zinc-300 dark:border-[#27272c] text-zinc-800 dark:text-zinc-200 hover:text-black dark:hover:text-white'
+          }`}
+          title={
+            settings?.autoModelRouting
+              ? 'Modo Automático Activo: Alterna entre Qwen 3.8 Max 0902, Kimi K3, Qwen 3.8 Flash y Qwen 3.7 Plus según tu mensaje'
+              : 'Cambiar modelo activo'
+          }
         >
-          <span className={`w-1.5 h-1.5 rounded-full ${currentProvider === 'alibaba' ? 'bg-orange-500' : currentProvider === 'custom' ? 'bg-amber-400' : 'bg-emerald-400'} animate-pulse`} />
-          <span className="text-[11px] font-semibold truncate max-w-[90px] sm:max-w-[130px] flex items-center gap-1">
-            {currentProvider === 'alibaba' && settings?.alibabaCustomLoraModel && settings.alibabaModel === settings.alibabaCustomLoraModel && (
-              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                LoRA
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              settings?.autoModelRouting
+                ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]'
+                : currentProvider === 'alibaba'
+                  ? 'bg-orange-500'
+                  : currentProvider === 'custom'
+                    ? 'bg-amber-400'
+                    : 'bg-emerald-400'
+            } animate-pulse`}
+          />
+          <span className="text-[11px] font-semibold truncate max-w-[105px] sm:max-w-[145px] flex items-center gap-1">
+            {settings?.autoModelRouting ? (
+              <span className="flex items-center gap-1 text-amber-300">
+                <span>✦</span>
+                <span>Automático</span>
               </span>
+            ) : (
+              <>
+                {currentProvider === 'alibaba' && settings?.alibabaCustomLoraModel && settings.alibabaModel === settings.alibabaCustomLoraModel && (
+                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    LoRA
+                  </span>
+                )}
+                <span>
+                  {currentProvider === 'alibaba'
+                    ? (settings?.alibabaModel?.split('/')?.pop() || 'Qwen 3.8')
+                    : currentProvider === 'custom'
+                      ? (settings?.customModel?.split('/')?.pop() || 'Kimi K3')
+                      : (settings?.geminiModel || 'Gemini 3.6')}
+                </span>
+              </>
             )}
-            <span>
-              {currentProvider === 'alibaba'
-                ? (settings?.alibabaModel?.split('/')?.pop() || 'Qwen 3.8')
-                : currentProvider === 'custom'
-                  ? (settings?.customModel?.split('/')?.pop() || 'Kimi K3')
-                  : (settings?.geminiModel || 'Gemini 3.6')}
-            </span>
           </span>
           <ChevronDown size={11} className="text-zinc-500" />
         </button>
@@ -390,6 +419,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               }
               onSelect={(provider, modelId) => {
                 onSelectQuickModel?.(provider, modelId);
+                setIsModelMenuOpen(false);
+              }}
+              onToggleAutoRouting={(enabled) => {
+                onToggleAutoRouting?.(enabled);
                 setIsModelMenuOpen(false);
               }}
               onClose={() => setIsModelMenuOpen(false)}
@@ -869,8 +902,9 @@ const UniversalModelDropdown: React.FC<{
   currentProvider: 'gemini' | 'custom' | 'alibaba';
   currentModel: string;
   onSelect: (provider: 'gemini' | 'custom' | 'alibaba', modelId: string) => void;
+  onToggleAutoRouting?: (enabled: boolean) => void;
   onClose: () => void;
-}> = ({ settings, currentProvider, currentModel, onSelect, onClose }) => {
+}> = ({ settings, currentProvider, currentModel, onSelect, onToggleAutoRouting, onClose }) => {
   const [models, setModels] = useState<LiveModelItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -1036,10 +1070,12 @@ const UniversalModelDropdown: React.FC<{
 
       // Add preset Alibaba core models supported in Singapore (ap-southeast-1)
       const alibabaPresets: LiveModelItem[] = [
-        { id: 'qwen3.8-omni-flash', name: 'Qwen 3.8 Omni Flash (1M)', provider: 'alibaba', description: 'Alibaba Singapur: Multimodal Nativo + 1M Contexto (Ultra-Económico)', isVision: true, hasReasoning: true, badge: 'Omni 1M' },
+        { id: 'qwen3.8-max-0902', name: 'Qwen 3.8 Max 0902 (Último)', provider: 'alibaba', description: 'Alibaba Singapur: Flagship 0902 con Thinking CoT Profundo', isVision: false, hasReasoning: true, badge: '0902 SOTA' },
         { id: 'kimi-k3', name: 'Kimi K3 (1M Cuota Gratis)', provider: 'alibaba', description: 'Alibaba Singapur: 1M Tokens Gratis + Tope de Seguridad Activo', isVision: true, hasReasoning: true, badge: 'K3 Gratis' },
-        { id: 'qwen3.8-max', name: 'Qwen 3.8 Max (CoT)', provider: 'alibaba', description: 'Alibaba Singapur: SOTA con Thinking CoT', isVision: false, hasReasoning: true, badge: 'Max' },
         { id: 'qwen3.8-flash', name: 'Qwen 3.8 Flash (1M)', provider: 'alibaba', description: 'Alibaba Singapur: 1M Tokens + Ultra-rápido y económico', isVision: false, hasReasoning: true, badge: 'Flash 1M' },
+        { id: 'qwen3.7-plus', name: 'Qwen 3.7 Plus (Balanceado)', provider: 'alibaba', description: 'Alibaba Singapur: Equilibrio óptimo para síntesis y estructura', isVision: true, hasReasoning: true, badge: '3.7 Plus' },
+        { id: 'qwen3.8-omni-flash', name: 'Qwen 3.8 Omni Flash (1M)', provider: 'alibaba', description: 'Alibaba Singapur: Multimodal Nativo + 1M Contexto (Ultra-Económico)', isVision: true, hasReasoning: true, badge: 'Omni 1M' },
+        { id: 'qwen3.8-max', name: 'Qwen 3.8 Max (CoT)', provider: 'alibaba', description: 'Alibaba Singapur: SOTA con Thinking CoT', isVision: false, hasReasoning: true, badge: 'Max' },
         { id: 'qwen3.8-plus', name: 'Qwen 3.8 Plus (1M)', provider: 'alibaba', description: 'Alibaba Singapur: 1M Contexto Extendido para Manuscritos', isVision: true, hasReasoning: true, badge: 'Plus 1M' },
         { id: 'deepseek-r1', name: 'DeepSeek R1 (CoT)', provider: 'alibaba', description: 'Alibaba Cloud MaaS: SOTA Razonamiento CoT', isVision: false, hasReasoning: true, badge: 'DeepSeek' },
         { id: 'deepseek-v3', name: 'DeepSeek V3', provider: 'alibaba', description: 'Alibaba Cloud MaaS: MoE 671B', isVision: false, hasReasoning: false, badge: 'V3' },
@@ -1057,7 +1093,7 @@ const UniversalModelDropdown: React.FC<{
           const loraModelId = settings?.alibabaCustomLoraModel?.trim();
           const topPriority = [
             ...(loraModelId ? [loraModelId] : []),
-            'qwen3.8-omni-flash', 'kimi-k3', 'gemini-4-argon', 'qwen3.8-max', 'qwen3.8-flash', 'qwen3.8-plus', 'qwen-plus', 'gemini-3.6-flash', 'gemini-3.8-flash', 'moonshotai/kimi-k3', 'gemini-3.1-pro-preview', 'gemini-2.5-flash'
+            'qwen3.8-max-0902', 'kimi-k3', 'qwen3.8-flash', 'qwen3.7-plus', 'qwen3.8-omni-flash', 'gemini-4-argon', 'qwen3.8-max', 'qwen3.8-plus', 'qwen-plus', 'gemini-3.6-flash', 'gemini-3.8-flash', 'moonshotai/kimi-k3', 'gemini-3.1-pro-preview', 'gemini-2.5-flash'
           ];
           // Deduplicate list by provider and ID to avoid React key warnings
           const uniqueMap = new Map<string, LiveModelItem>();
@@ -1237,6 +1273,35 @@ const UniversalModelDropdown: React.FC<{
 
         {/* Dynamic List */}
         <div className="p-1.5 overflow-y-auto max-h-72 space-y-1 smooth-scroll">
+          {/* Smart Auto-Router Pinned Option (Gemini PC Style) */}
+          <button
+            type="button"
+            onClick={() => {
+              onToggleAutoRouting?.(!settings?.autoModelRouting);
+            }}
+            className={`w-full flex items-start justify-between p-2.5 mb-1.5 rounded-xl text-left transition-all cursor-pointer border ${
+              settings?.autoModelRouting
+                ? 'bg-amber-500/15 border-amber-500/50 text-zinc-900 dark:text-white shadow-sm'
+                : 'bg-zinc-50 dark:bg-[#13131a] hover:bg-zinc-100 dark:hover:bg-[#181822] border-zinc-200 dark:border-[#252530] text-zinc-700 dark:text-zinc-300'
+            }`}
+          >
+            <div className="min-w-0 flex-1 pr-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-amber-500 dark:text-amber-400 font-bold text-xs">✦</span>
+                <span className="font-semibold text-xs text-zinc-900 dark:text-white">
+                  Modo Automático (Smart Router)
+                </span>
+                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-semibold">
+                  {settings?.autoModelRouting ? 'Activo' : 'Auto'}
+                </span>
+              </div>
+              <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-sans mt-0.5 leading-snug">
+                Detecta tu mensaje y alterna automáticamente entre <strong className="text-zinc-700 dark:text-zinc-200">Qwen 3.8 Max 0902</strong>, <strong className="text-zinc-700 dark:text-zinc-200">Kimi K3</strong>, <strong className="text-zinc-700 dark:text-zinc-200">Qwen 3.8 Flash</strong> y <strong className="text-zinc-700 dark:text-zinc-200">Qwen 3.7 Plus</strong>.
+              </div>
+            </div>
+            {settings?.autoModelRouting && <Check size={14} className="text-amber-500 shrink-0 mt-1" />}
+          </button>
+
           {isLoading && filtered.length === 0 ? (
             <div className="py-8 text-center text-xs text-zinc-500 dark:text-zinc-400 font-mono animate-pulse">
               Sincronizando modelos con tus claves...
@@ -1247,7 +1312,7 @@ const UniversalModelDropdown: React.FC<{
             </div>
           ) : (
             filtered.map((m) => {
-              const isSelected = currentProvider === m.provider && currentModel === m.id;
+              const isSelected = !settings?.autoModelRouting && currentProvider === m.provider && currentModel === m.id;
               return (
                 <button
                   key={`${m.provider}_${m.id}`}

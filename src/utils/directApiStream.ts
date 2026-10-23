@@ -628,9 +628,10 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
             continue;
           }
           // Recovery: model not found or unavailable on Alibaba compatible-mode
-          if ((res.status === 404 || res.status === 403 || /model_not_found|Model not exist|Access to model denied/i.test(errorText)) && isAlibaba && payload.model !== 'qwen3.8-max') {
-            console.warn('[directApiStream] Modelo no encontrado en endpoint. Reintentando con qwen3.8-max...');
-            payload.model = 'qwen3.8-max';
+          if ((res.status === 404 || res.status === 403 || /model_not_found|Model not exist|Access to model denied/i.test(errorText)) && isAlibaba && payload.model !== 'qwen3.8-max' && payload.model !== 'qwen-plus') {
+            const nextFallback = String(payload.model || '').toLowerCase().includes('plus') ? 'qwen-plus' : 'qwen3.8-max';
+            console.warn(`[directApiStream] Modelo no encontrado en endpoint. Reintentando con ${nextFallback}...`);
+            payload.model = nextFallback;
             payload.max_tokens = Math.min(payload.max_tokens || 8192, 8192);
             continue;
           }

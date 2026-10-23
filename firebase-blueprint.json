@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "chat": {
+      "title": "Chat",
+      "description": "Conversation between user and assistant",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the chat"
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the owner user"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the conversation"
+        },
+        "folderId": {
+          "type": "string",
+          "description": "Optional folder id"
+        },
+        "messages": {
+          "type": "array",
+          "description": "List of messages in conversation"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Creation timestamp in milliseconds"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Last update timestamp in milliseconds"
+        }
+      },
+      "required": ["id", "userId", "title"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/chats/{chatId}": {
+      "schema": "chat",
+      "description": "Stores user chat conversations"
+    }
+  }
+}

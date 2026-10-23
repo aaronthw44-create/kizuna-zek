@@ -1,0 +1,6 @@
+{
+  "name": "Kizuna-Zek",
+  "description": "Noir Monochrome AI Workspace & Novel Writing Environment with Lore Architecture and Session Media Gallery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

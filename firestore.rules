@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // User chats isolation
+    match /users/{userId}/chats/{chatId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User lore files isolation
+    match /users/{userId}/loreFiles/{loreId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User folders isolation
+    match /users/{userId}/folders/{folderId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

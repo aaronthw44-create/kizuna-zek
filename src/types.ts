@@ -146,6 +146,10 @@ export interface AppSettings {
     customInstructions?: string;
   };
   enableMemoryToggle?: boolean;
+  asrEngine?: 'qwen-audio-3.1-asr-flash' | 'browser';
+  ttsEngine?: 'auto' | 'qwen-audio-3.1-tts-flash' | 'qwen-audio-3.1-tts-plus' | 'browser';
+  ttsVoice?: string;
+  ttsInstruct?: string;
 }
 
 export interface AppStatistics {

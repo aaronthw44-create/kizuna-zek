@@ -899,24 +899,67 @@ app.post(['/api/alibaba/images/generations', '/api/images/generate'], async (req
   });
 });
 
-// Dedicated Alibaba Cloud TTS Endpoint (Qwen-Audio-3.1-TTS-Plus / Qwen-TTS / CosyVoice)
+// Dedicated Alibaba Cloud TTS Endpoint (Qwen-Audio-3.1-TTS-Plus & Qwen-Audio-3.1-TTS-Flash)
 app.post('/api/alibaba/tts', async (req, res) => {
-  const { text, alibabaApiKey, voice = 'Cherry' } = req.body || {};
-  const cleanText = String(text || '').trim().slice(0, 600);
+  const {
+    text,
+    alibabaApiKey,
+    voice = 'Cherry',
+    model = 'auto',
+    instruct = '',
+  } = req.body || {};
+
+  const cleanText = String(text || '').trim().slice(0, 2500);
   if (!cleanText) {
     return res.status(400).json({ error: 'Texto requerido para síntesis de voz' });
   }
   const cleanAliKey = (alibabaApiKey || process.env.ALIBABA_API_KEY || process.env.DASHSCOPE_API_KEY || '').trim();
-  if (!cleanAliKey || cleanAliKey.startsWith('sk-ws-')) {
+  if (!cleanAliKey) {
     return res.status(200).json({ fallback: true });
   }
 
-  try {
-    const candidateModels = ['qwen-tts', 'qwen-audio-3.1-tts-plus', 'qwen-audio-3.0-tts'];
-    for (const ttsModel of candidateModels) {
-      const ttsRes = await fetch(
+  // Smart Auto-Selection between TTS-Plus (Literary / Dramatic) and TTS-Flash (Fast / Conversational)
+  const isNarrativeScene =
+    /[«»—]|(?:\bcap[íi]tulo\b|\bescena\b|\bsusurr|\bmirada\b|\bsilencio\b|\bsangre\b|\bcatarsis\b)/i.test(cleanText) ||
+    cleanText.length > 420;
+
+  let primaryModel = 'qwen-audio-3.1-tts-flash';
+  if (model === 'qwen-audio-3.1-tts-plus') {
+    primaryModel = 'qwen-audio-3.1-tts-plus';
+  } else if (model === 'qwen-audio-3.1-tts-flash') {
+    primaryModel = 'qwen-audio-3.1-tts-flash';
+  } else {
+    primaryModel = isNarrativeScene ? 'qwen-audio-3.1-tts-plus' : 'qwen-audio-3.1-tts-flash';
+  }
+
+  const candidateModels =
+    primaryModel === 'qwen-audio-3.1-tts-plus'
+      ? ['qwen-audio-3.1-tts-plus', 'qwen-audio-3.1-tts-flash', 'qwen3-tts-flash', 'qwen-tts']
+      : ['qwen-audio-3.1-tts-flash', 'qwen-audio-3.1-tts-plus', 'qwen3-tts-flash', 'qwen-tts'];
+
+  const cleanInstruct = String(instruct || '').trim();
+  const dashscopeUrls = cleanAliKey.startsWith('sk-ws-')
+    ? [
+        'https://ws-sitvcc6ml5lia10m.ap-southeast-1.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
         'https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
-        {
+      ]
+    : [
+        'https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+        'https://ws-sitvcc6ml5lia10m.ap-southeast-1.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+      ];
+
+  try {
+    for (const endpointUrl of dashscopeUrls) {
+      for (const ttsModel of candidateModels) {
+        const inputPayload: Record<string, any> = {
+          text: cleanText,
+          voice: voice || 'Cherry',
+        };
+        if (cleanInstruct) {
+          inputPayload.instruct = cleanInstruct;
+        }
+
+        const ttsRes = await fetch(endpointUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${cleanAliKey}`,
@@ -924,32 +967,192 @@ app.post('/api/alibaba/tts', async (req, res) => {
           },
           body: JSON.stringify({
             model: ttsModel,
-            input: {
-              text: cleanText,
-              voice,
-            },
+            input: inputPayload,
           }),
-        }
-      );
+        }).catch(() => null);
 
-      if (ttsRes.ok) {
-        const data = await ttsRes.json();
-        const audioUrl = data?.output?.audio?.url;
-        const audioData = data?.output?.audio?.data;
-        if (audioData) {
-          return res.json({
-            audioDataUrl: `data:audio/wav;base64,${audioData}`,
-            model: ttsModel,
-          });
-        }
-        if (audioUrl) {
-          return res.json({
-            audioUrl,
-            model: ttsModel,
-          });
+        if (ttsRes && ttsRes.ok) {
+          const data = await ttsRes.json();
+          const audioUrl = data?.output?.audio?.url;
+          const audioData = data?.output?.audio?.data;
+          if (audioData) {
+            return res.json({
+              audioDataUrl: `data:audio/wav;base64,${audioData}`,
+              model: ttsModel,
+            });
+          }
+          if (audioUrl) {
+            try {
+              const audioFetch = await fetch(audioUrl);
+              if (audioFetch.ok) {
+                const buf = await audioFetch.arrayBuffer();
+                const b64 = Buffer.from(buf).toString('base64');
+                const mime = audioFetch.headers.get('content-type') || 'audio/wav';
+                return res.json({
+                  audioDataUrl: `data:${mime};base64,${b64}`,
+                  audioUrl,
+                  model: ttsModel,
+                });
+              }
+            } catch {
+              // Fall through to direct URL
+            }
+            return res.json({
+              audioUrl,
+              model: ttsModel,
+            });
+          }
         }
       }
     }
+    return res.status(200).json({ fallback: true });
+  } catch {
+    return res.status(200).json({ fallback: true });
+  }
+});
+
+// Dedicated Alibaba Cloud ASR Endpoint (Qwen-Audio-3.1-ASR-Flash Speech-to-Text)
+app.post('/api/alibaba/asr', async (req, res) => {
+  const { audioBase64, mimeType = 'audio/webm', alibabaApiKey, language = 'es' } = req.body || {};
+  const rawAudio = String(audioBase64 || '').trim();
+  if (!rawAudio) {
+    return res.status(400).json({ error: 'Audio requerido para transcripción ASR' });
+  }
+
+  const cleanAliKey = (alibabaApiKey || process.env.ALIBABA_API_KEY || process.env.DASHSCOPE_API_KEY || '').trim();
+  if (!cleanAliKey) {
+    return res.status(200).json({ fallback: true });
+  }
+
+  const pureBase64 = rawAudio.includes('base64,') ? rawAudio.split('base64,')[1] : rawAudio;
+  const formatHint = mimeType.includes('mp4') || mimeType.includes('m4a')
+    ? 'mp4'
+    : mimeType.includes('ogg')
+    ? 'ogg'
+    : mimeType.includes('wav')
+    ? 'wav'
+    : 'webm';
+  const fullDataUri = rawAudio.startsWith('data:') ? rawAudio : `data:${mimeType};base64,${pureBase64}`;
+
+  const oaiBaseUrls = cleanAliKey.startsWith('sk-ws-')
+    ? [
+        'https://ws-sitvcc6ml5lia10m.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1',
+        'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+      ]
+    : [
+        'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+        'https://ws-sitvcc6ml5lia10m.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1',
+      ];
+
+  const dashscopeBaseUrls = cleanAliKey.startsWith('sk-ws-')
+    ? [
+        'https://ws-sitvcc6ml5lia10m.ap-southeast-1.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+        'https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+      ]
+    : [
+        'https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+        'https://ws-sitvcc6ml5lia10m.ap-southeast-1.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+      ];
+
+  const candidateAsrModels = ['qwen-audio-3.1-asr-flash', 'qwen3-asr-flash', 'qwen-audio-asr'];
+
+  try {
+    // Method 1: DashScope Native Multimodal Generation endpoint (primary for Qwen-Audio-3.1-ASR-Flash)
+    for (const endpointUrl of dashscopeBaseUrls) {
+      for (const asrModel of candidateAsrModels) {
+        const dsRes = await fetch(endpointUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${cleanAliKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: asrModel,
+            input: {
+              messages: [
+                {
+                  role: 'user',
+                  content: [
+                    { audio: fullDataUri },
+                  ],
+                },
+              ],
+            },
+            parameters: {
+              asr_options: {
+                language,
+                enable_lid: true,
+                enable_itn: true,
+              },
+            },
+          }),
+        }).catch(() => null);
+
+        if (dsRes && dsRes.ok) {
+          const dsData = await dsRes.json();
+          const choiceContent = dsData?.output?.choices?.[0]?.message?.content;
+          let transcript = '';
+          if (typeof choiceContent === 'string') {
+            transcript = choiceContent.trim();
+          } else if (Array.isArray(choiceContent)) {
+            transcript = choiceContent
+              .map((item: any) => item?.text || '')
+              .join(' ')
+              .trim();
+          } else if (dsData?.output?.text) {
+            transcript = String(dsData.output.text).trim();
+          }
+          if (transcript) {
+            return res.json({
+              text: transcript,
+              model: asrModel,
+            });
+          }
+        }
+      }
+    }
+
+    // Method 2: OpenAI-Compatible Chat Completions Multimodal Audio Input
+    for (const baseUrl of oaiBaseUrls) {
+      for (const asrModel of candidateAsrModels) {
+        const oaiRes = await fetch(`${baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${cleanAliKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: asrModel,
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'input_audio',
+                    input_audio: {
+                      data: fullDataUri,
+                      format: formatHint,
+                    },
+                  },
+                ],
+              },
+            ],
+          }),
+        }).catch(() => null);
+
+        if (oaiRes && oaiRes.ok) {
+          const oaiData = await oaiRes.json();
+          const rawText = oaiData?.choices?.[0]?.message?.content;
+          if (typeof rawText === 'string' && rawText.trim()) {
+            return res.json({
+              text: rawText.trim(),
+              model: asrModel,
+            });
+          }
+        }
+      }
+    }
+
     return res.status(200).json({ fallback: true });
   } catch {
     return res.status(200).json({ fallback: true });

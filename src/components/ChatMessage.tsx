@@ -91,6 +91,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const [isThoughtOpen, setIsThoughtOpen] = useState(false);
   const [thinkingSeconds, setThinkingSeconds] = useState<number>(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isLoadingTts, setIsLoadingTts] = useState(false);
+  const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
   const [isIllustrating, setIsIllustrating] = useState(false);
   const [isSavingToDrive, setIsSavingToDrive] = useState(false);
   const [isDriveSaved, setIsDriveSaved] = useState(false);
@@ -168,6 +170,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
 
   useEffect(() => {
     return () => {
+      if (ttsAudioRef.current) {
+        try {
+          ttsAudioRef.current.pause();
+          ttsAudioRef.current.src = '';
+        } catch {}
+        ttsAudioRef.current = null;
+      }
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
@@ -388,14 +397,28 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     return false;
   }, [isUser, message.isStreaming, message.error, message.content, message.isInterrupted, isInterrupted, cleanDisplayContent]);
 
-  const handleToggleSpeak = () => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+  const handleToggleSpeak = async () => {
+    if (typeof window === 'undefined') return;
+    if (isLoadingTts) return;
+
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
+      if (ttsAudioRef.current) {
+        try {
+          ttsAudioRef.current.pause();
+          ttsAudioRef.current.currentTime = 0;
+        } catch {}
+        ttsAudioRef.current = null;
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
       setIsSpeaking(false);
       return;
     }
-    window.speechSynthesis.cancel();
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
 
     // Clean text of markdown, code blocks, and markdown markers for clear speech
     const cleanSpeechText = cleanDisplayContent
@@ -408,7 +431,65 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
 
     if (!cleanSpeechText) return;
 
-    // Pick best natural Spanish voice if available on system
+    let alibabaApiKey = '';
+    let ttsEngine: 'auto' | 'qwen-audio-3.1-tts-flash' | 'qwen-audio-3.1-tts-plus' | 'browser' = 'auto';
+    let ttsVoice = 'Cherry';
+    let ttsInstruct = '';
+    try {
+      const rawSettings = localStorage.getItem('kizuna_zek_v2_settings');
+      const parsed = rawSettings ? JSON.parse(rawSettings) : {};
+      alibabaApiKey = (parsed.alibabaApiKey || localStorage.getItem('kizuna_alibaba_api_key') || '').trim();
+      if (parsed.ttsEngine) ttsEngine = parsed.ttsEngine;
+      if (parsed.ttsVoice) ttsVoice = parsed.ttsVoice;
+      if (parsed.ttsInstruct) ttsInstruct = parsed.ttsInstruct;
+    } catch {}
+
+    // 1. Qwen-Audio 3.1 TTS (Flash / Plus / Auto) Path
+    if (alibabaApiKey && ttsEngine !== 'browser') {
+      setIsLoadingTts(true);
+      try {
+        const res = await fetch('/api/alibaba/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: cleanSpeechText.slice(0, 2500),
+            alibabaApiKey,
+            model: ttsEngine,
+            voice: ttsVoice,
+            instruct: ttsInstruct,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const srcUrl = data.audioDataUrl || data.audioUrl;
+          if (srcUrl && !data.fallback) {
+            const audio = new Audio(srcUrl);
+            ttsAudioRef.current = audio;
+            audio.onended = () => {
+              setIsSpeaking(false);
+              ttsAudioRef.current = null;
+            };
+            audio.onerror = () => {
+              setIsSpeaking(false);
+              ttsAudioRef.current = null;
+            };
+            setIsLoadingTts(false);
+            setIsSpeaking(true);
+            await audio.play();
+            return;
+          }
+        }
+      } catch {
+        // Fall through to native Web Speech API
+      } finally {
+        setIsLoadingTts(false);
+      }
+    }
+
+    // 2. Native Browser SpeechSynthesis Fallback
+    if (!window.speechSynthesis) return;
+
     const voices = window.speechSynthesis.getVoices();
     const spanishVoice =
       voices.find(v => v.lang.startsWith('es') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Premium'))) ||
@@ -419,9 +500,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     if (spanishVoice) utterance.voice = spanishVoice;
     utterance.lang = 'es-ES';
     utterance.rate = 1.0;
-    utterance.pitch = 0.98; // slightly calmer, narrative tone
+    utterance.pitch = 0.98;
 
-    // Workaround for Chrome's 15-second speech cutoff bug
     let keepAliveTimer: any = null;
     utterance.onstart = () => {
       setIsSpeaking(true);
@@ -1234,14 +1314,28 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                 <button
                   type="button"
                   onClick={handleToggleSpeak}
+                  disabled={isLoadingTts}
                   className={`p-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-mono select-none ${
                     isSpeaking
                       ? 'text-amber-400 bg-amber-500/15 border border-amber-500/30 animate-pulse'
+                      : isLoadingTts
+                      ? 'text-zinc-300 bg-white/5 border border-white/10'
                       : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800'
                   }`}
-                  title={isSpeaking ? "Detener lectura de escena" : "Narrar escena en voz alta (TTS)"}
+                  title={
+                    isLoadingTts
+                      ? 'Sintetizando voz con Qwen-Audio 3.1...'
+                      : isSpeaking
+                      ? 'Detener lectura de escena'
+                      : 'Narrar en voz alta (Qwen-Audio 3.1 TTS)'
+                  }
                 >
-                  {isSpeaking ? (
+                  {isLoadingTts ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin text-zinc-300 shrink-0" />
+                      <span className="hidden sm:inline text-[10px] text-zinc-300">Sintetizando</span>
+                    </>
+                  ) : isSpeaking ? (
                     <>
                       <VolumeX size={13} className="text-amber-400 shrink-0" />
                       <span className="hidden sm:inline text-[10px] text-amber-300">Detener</span>

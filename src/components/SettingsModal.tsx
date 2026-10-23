@@ -33,6 +33,8 @@ import {
   Edit2,
   User,
   Cloud,
+  Mic,
+  Volume2,
 } from 'lucide-react';
 import { AppSettings, SmartMemory, NvidiaModelItem, Chat } from '../types';
 import { buildRollingSessionSummary, synthesizeSessionSummaryWithAI } from '../utils/memoryDetector';
@@ -2876,6 +2878,140 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Motor de Voz y Audio (Qwen-Audio 3.1: ASR-Flash, TTS-Flash, TTS-Plus) */}
+              <div className="bg-[#12121a] border border-[#232330] p-4 rounded-xl space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
+                    <Volume2 size={15} className="text-zinc-300" />
+                    <span>Motor de Voz y Audio (Qwen-Audio 3.1)</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-zinc-400 px-2 py-0.5 rounded bg-white/5 border border-white/10">
+                    Alibaba Singapur
+                  </span>
+                </div>
+
+                {/* 1. Dictado por Micrófono (ASR) */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-300">
+                    <Mic size={12} className="text-zinc-400" />
+                    <span>Dictado de Voz (Micrófono)</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      {
+                        id: 'qwen-audio-3.1-asr-flash',
+                        label: 'Qwen-Audio-3.1-ASR-Flash',
+                        desc: 'Transcripción inteligente con puntuación automática',
+                      },
+                      {
+                        id: 'browser',
+                        label: 'Nativo del navegador',
+                        desc: 'Web Speech API local sin consumo de cuota',
+                      },
+                    ].map((opt) => {
+                      const activeAsr = current.asrEngine || 'qwen-audio-3.1-asr-flash';
+                      const isSelected = activeAsr === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() =>
+                            setCurrent({
+                              ...current,
+                              asrEngine: opt.id as 'qwen-audio-3.1-asr-flash' | 'browser',
+                            })
+                          }
+                          className={`p-2.5 min-h-[44px] rounded-lg border text-left transition-all cursor-pointer ${
+                            isSelected
+                              ? 'border-white/40 bg-[#181824] text-white'
+                              : 'border-[#22222e] bg-[#101017] text-zinc-400 hover:border-zinc-700 hover:text-white'
+                          }`}
+                        >
+                          <div className="text-xs font-mono font-medium truncate">{opt.label}</div>
+                          <div className="text-[10px] text-zinc-500 mt-0.5 line-clamp-1">{opt.desc}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Síntesis de Lectura en Voz Alta (TTS) */}
+                <div className="space-y-1.5 pt-1 border-t border-white/5">
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-300">
+                    <Volume2 size={12} className="text-zinc-400" />
+                    <span>Lectura en Voz Alta (Botón Escuchar)</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      {
+                        id: 'auto',
+                        label: 'Automático (Flash / Plus)',
+                        desc: 'Flash para respuestas breves y Plus para escenas literarias',
+                      },
+                      {
+                        id: 'qwen-audio-3.1-tts-flash',
+                        label: 'Qwen-Audio-3.1-TTS-Flash',
+                        desc: 'Lectura rápida y baja latencia por tokens',
+                      },
+                      {
+                        id: 'qwen-audio-3.1-tts-plus',
+                        label: 'Qwen-Audio-3.1-TTS-Plus',
+                        desc: 'Narración de estudio y actuación vocal',
+                      },
+                      {
+                        id: 'browser',
+                        label: 'Nativo del navegador',
+                        desc: 'Voz del sistema sin consumo de API',
+                      },
+                    ].map((opt) => {
+                      const activeTts = current.ttsEngine || 'auto';
+                      const isSelected = activeTts === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() =>
+                            setCurrent({
+                              ...current,
+                              ttsEngine: opt.id as 'auto' | 'qwen-audio-3.1-tts-flash' | 'qwen-audio-3.1-tts-plus' | 'browser',
+                            })
+                          }
+                          className={`p-2.5 min-h-[44px] rounded-lg border text-left transition-all cursor-pointer ${
+                            isSelected
+                              ? 'border-white/40 bg-[#181824] text-white'
+                              : 'border-[#22222e] bg-[#101017] text-zinc-400 hover:border-zinc-700 hover:text-white'
+                          }`}
+                        >
+                          <div className="text-xs font-mono font-medium truncate">{opt.label}</div>
+                          <div className="text-[10px] text-zinc-500 mt-0.5 line-clamp-1">{opt.desc}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Directiva de Tono Vocal (Instruct TTS) */}
+                {(current.ttsEngine || 'auto') !== 'browser' && (
+                  <div className="space-y-1.5 pt-1 border-t border-white/5">
+                    <label className="block text-[11px] font-medium text-zinc-300">
+                      Directiva de actuación vocal (opcional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Narración literaria pausada, sobria y con matices profundos"
+                      value={current.ttsInstruct || ''}
+                      onChange={(e) =>
+                        setCurrent({
+                          ...current,
+                          ttsInstruct: e.target.value,
+                        })
+                      }
+                      className="w-full bg-[#0a0a0d] border border-white/10 rounded-lg px-3 py-2 text-[16px] md:text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-white/30"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Resumen de Sesión (Debajo de Modelos y Proveedores) */}

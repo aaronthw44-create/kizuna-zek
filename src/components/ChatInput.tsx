@@ -114,6 +114,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [selectedCadence, setSelectedCadence] = useState<'rio' | 'denso' | 'ruptura' | null>(null);
   const [activeInfoMode, setActiveInfoMode] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const [isTranscribingAsr, setIsTranscribingAsr] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isWebSearchActive, setIsWebSearchActive] = useState(isWebSearchEnabled);
   const [isToneChipsOpen, setIsToneChipsOpen] = useState(false);
@@ -155,6 +156,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const docInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const backupSpeechTextRef = useRef<string>('');
 
   // Expanded state if focused, has text, has attachments, or upload menu is open
   const isExpanded = isFocused || text.trim().length > 0 || attachments.length > 0 || isMenuOpen;
@@ -189,16 +194,164 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   const toggleListening = async () => {
+    if (isTranscribingAsr) return;
+
     if (isListening) {
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
         } catch {}
       }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch {}
+      } else if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = null;
+      }
       setIsListening(false);
       return;
     }
 
+    let alibabaApiKey = '';
+    let asrEngine: 'qwen-audio-3.1-asr-flash' | 'browser' = 'qwen-audio-3.1-asr-flash';
+    try {
+      const rawSettings = localStorage.getItem('kizuna_zek_v2_settings');
+      const parsed = rawSettings ? JSON.parse(rawSettings) : {};
+      alibabaApiKey = (parsed.alibabaApiKey || localStorage.getItem('kizuna_alibaba_api_key') || '').trim();
+      if (parsed.asrEngine === 'browser') {
+        asrEngine = 'browser';
+      }
+    } catch {}
+
+    const useQwenAsr = Boolean(alibabaApiKey) && asrEngine === 'qwen-audio-3.1-asr-flash' && typeof MediaRecorder !== 'undefined';
+    const isInsideIframe = typeof window !== 'undefined' && window.self !== window.top;
+
+    // 1. Qwen-Audio-3.1-ASR-Flash Intelligent Dictation Path
+    if (useQwenAsr && navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaStreamRef.current = stream;
+        audioChunksRef.current = [];
+        backupSpeechTextRef.current = '';
+
+        const preferredMime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/mp4')
+          ? 'audio/mp4'
+          : '';
+        const recorder = preferredMime ? new MediaRecorder(stream, { mimeType: preferredMime }) : new MediaRecorder(stream);
+
+        recorder.ondataavailable = (ev) => {
+          if (ev.data && ev.data.size > 0) {
+            audioChunksRef.current.push(ev.data);
+          }
+        };
+
+        recorder.onstop = async () => {
+          const mimeType = recorder.mimeType || 'audio/webm';
+          if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+            mediaStreamRef.current = null;
+          }
+          const chunks = audioChunksRef.current;
+          audioChunksRef.current = [];
+          if (!chunks.length) return;
+
+          const audioBlob = new Blob(chunks, { type: mimeType });
+          if (audioBlob.size < 400) return;
+
+          setIsTranscribingAsr(true);
+          try {
+            const base64Audio = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(String(reader.result || ''));
+              reader.onerror = reject;
+              reader.readAsDataURL(audioBlob);
+            });
+
+            const res = await fetch('/api/alibaba/asr', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                audioBase64: base64Audio,
+                mimeType,
+                alibabaApiKey,
+                language: 'es',
+              }),
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              if (data.text && String(data.text).trim()) {
+                const cleanChunk = String(data.text).trim();
+                setText((prev) => {
+                  const cleanPrev = prev ? prev.trim() : '';
+                  return cleanPrev ? `${cleanPrev} ${cleanChunk}` : cleanChunk;
+                });
+                return;
+              }
+            }
+
+            // Fallback to parallel browser transcript if ASR endpoint returned fallback
+            if (backupSpeechTextRef.current.trim()) {
+              const fallbackChunk = backupSpeechTextRef.current.trim();
+              setText((prev) => {
+                const cleanPrev = prev ? prev.trim() : '';
+                return cleanPrev ? `${cleanPrev} ${fallbackChunk}` : fallbackChunk;
+              });
+            }
+          } catch {
+            if (backupSpeechTextRef.current.trim()) {
+              const fallbackChunk = backupSpeechTextRef.current.trim();
+              setText((prev) => {
+                const cleanPrev = prev ? prev.trim() : '';
+                return cleanPrev ? `${cleanPrev} ${fallbackChunk}` : fallbackChunk;
+              });
+            }
+          } finally {
+            setIsTranscribingAsr(false);
+          }
+        };
+
+        // Optional silent background Web Speech backup in case offline
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          try {
+            const backupRec = new SpeechRecognition();
+            backupRec.continuous = true;
+            backupRec.interimResults = false;
+            backupRec.lang = 'es-ES';
+            backupRec.onresult = (e: any) => {
+              let chunk = '';
+              for (let i = e.resultIndex; i < e.results.length; i++) {
+                if (e.results[i]?.[0]) chunk += e.results[i][0].transcript + ' ';
+              }
+              if (chunk.trim()) {
+                backupSpeechTextRef.current = `${backupSpeechTextRef.current} ${chunk.trim()}`.trim();
+              }
+            };
+            backupRec.start();
+            recognitionRef.current = backupRec;
+          } catch {}
+        }
+
+        recorder.start();
+        mediaRecorderRef.current = recorder;
+        setIsListening(true);
+        return;
+      } catch (err: any) {
+        setIsListening(false);
+        const errStr = String(err?.message || err?.name || err || '');
+        if (isInsideIframe && (errStr.includes('NotAllowedError') || errStr.includes('Permission'))) {
+          onShowWarningToast?.('El dictado por voz no está permitido en este marco incorporado. Abre la app en una nueva pestaña para usar el micrófono.');
+          return;
+        }
+      }
+    }
+
+    // 2. Native Browser Web Speech API Fallback
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
@@ -209,10 +362,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       return;
     }
 
-    const isInsideIframe = typeof window !== 'undefined' && window.self !== window.top;
-
     try {
-      // Check if running inside an iframe where Permissions Policy blocks audio
       if (isInsideIframe && !navigator.mediaDevices?.getUserMedia) {
         throw new Error('IFRAME_BLOCKED');
       }
@@ -813,15 +963,30 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       whileTap={{ scale: 0.95 }}
       type="button"
       onClick={toggleListening}
+      disabled={isTranscribingAsr}
       className={`p-2 min-w-[44px] min-h-[44px] rounded-xl transition-all shrink-0 flex items-center justify-center cursor-pointer select-none active:scale-95 ${
         isListening
           ? 'bg-red-500/20 text-red-400 animate-pulse border border-red-500/30'
+          : isTranscribingAsr
+          ? 'bg-white/10 text-zinc-200 border border-white/15'
           : 'text-zinc-400 hover:text-white hover:bg-white/5'
       }`}
-      title={isListening ? 'Escuchando... Toca para detener el dictado' : 'Dictado por voz (Web Speech API)'}
+      title={
+        isTranscribingAsr
+          ? 'Transcribiendo con Qwen-Audio-3.1-ASR-Flash...'
+          : isListening
+          ? 'Escuchando... Toca para finalizar y transcribir'
+          : 'Dictado por voz (Qwen-Audio-3.1-ASR-Flash)'
+      }
       aria-label="Dictado por voz"
     >
-      {isListening ? <MicOff size={18} strokeWidth={2.2} /> : <Mic size={18} strokeWidth={2.2} />}
+      {isTranscribingAsr ? (
+        <Loader2 size={18} className="animate-spin text-zinc-200" />
+      ) : isListening ? (
+        <MicOff size={18} strokeWidth={2.2} />
+      ) : (
+        <Mic size={18} strokeWidth={2.2} />
+      )}
     </motion.button>
   );
 

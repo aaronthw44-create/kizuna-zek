@@ -867,7 +867,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
 
               {/* Show loaded lore badge if recorded on assistant turn */}
               {!isUser && message.selectedLoreIds && message.selectedLoreIds.length > 0 && (
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-[#101014] border border-[#1f1f23] text-neutral-400 rounded-md">
+                <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-[#101014] border border-[#1f1f23] text-neutral-400 rounded-md">
                   <BookOpen size={9} />
                   <span>{message.selectedLoreIds.length} Lore Refs</span>
                 </span>
@@ -1368,6 +1368,20 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                   <Copy size={13} />
                 </button>
 
+                {isUser && onEditMessage && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditContent(message.content);
+                      setIsEditing(true);
+                    }}
+                    className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                    title="Editar mensaje"
+                  >
+                    <Edit3 size={13} />
+                  </button>
+                )}
+
                 {/* TTS Speaker Read Aloud Button */}
                 <button
                   type="button"
@@ -1524,9 +1538,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
 
               </div>
 
-              {/* Right: Word & Token counters (single clean line, never wrap) */}
+              {/* Right: Word & Token counters (clean line on PC, wraps gracefully on narrow mobile) */}
               {!isUser && (wordCount > 0 || message.estimatedTokens || message.ttftSeconds !== undefined || message.tokensPerSecond !== undefined || (message.cachedTokens !== undefined && message.cachedTokens > 0)) && (
-                <div className="text-[10px] font-mono text-zinc-500 whitespace-nowrap ml-auto shrink-0 flex items-center gap-1.5 pt-0.5">
+                <div className="text-[10px] font-mono text-zinc-500 flex-wrap justify-end ml-auto flex items-center gap-x-1.5 gap-y-1 pt-0.5">
                   {message.cachedTokens !== undefined && message.cachedTokens > 0 && (
                     <>
                       <span className="text-emerald-400 font-mono inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20" title={`Implicit Cache Hit en Alibaba Cloud (-90% costo en ${message.cachedTokens} tokens)`}>

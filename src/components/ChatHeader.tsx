@@ -115,11 +115,13 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const [isFolderSelectorOpen, setIsFolderSelectorOpen] = useState(false);
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
   const [isOverflowOpen, setIsOverflowOpen] = useState(false);
+  const [isTokenGaugeOpen, setIsTokenGaugeOpen] = useState(false);
   const [isBindingEpub, setIsBindingEpub] = useState(false);
   const loreDropdownRef = useRef<HTMLDivElement>(null);
   const folderDropdownRef = useRef<HTMLDivElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
   const overflowRef = useRef<HTMLDivElement>(null);
+  const tokenGaugeRef = useRef<HTMLDivElement>(null);
 
   const handleTriggerExportEpub = () => {
     if (!onExportEpub || isBindingEpub) return;
@@ -165,6 +167,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       ) {
         setIsModelMenuOpen(false);
       }
+      if (
+        tokenGaugeRef.current &&
+        !tokenGaugeRef.current.contains(e.target as Node)
+      ) {
+        setIsTokenGaugeOpen(false);
+      }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -172,6 +180,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         setIsFolderSelectorOpen(false);
         setIsOverflowOpen(false);
         setIsModelMenuOpen(false);
+        setIsTokenGaugeOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -210,13 +219,13 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       : `${totalContextTokens}`;
 
   return (
-    <header className="sticky top-0 z-30 w-full h-14 bg-[#09090b] border-b border-white/10 px-3 flex items-center justify-between shrink-0 select-none">
+    <header className="sticky top-0 z-30 w-full h-14 bg-[#09090b] border-b border-white/10 px-2 sm:px-3 flex items-center justify-between gap-1 sm:gap-2 shrink-0 select-none">
       {/* Left Section: Fixed Hamburger Menu + Clean Title & Folder */}
-      <div className="flex items-center min-w-0 flex-1 mr-2">
+      <div className="flex items-center min-w-0 flex-1 mr-1 sm:mr-2">
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="p-2 min-h-[44px] min-w-[44px] -ml-1 shrink-0 rounded-xl text-neutral-300 hover:text-white hover:bg-white/10 select-none active:scale-95 transition-all flex items-center justify-center cursor-pointer"
+          className="p-1.5 sm:p-2 min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] -ml-1 shrink-0 rounded-xl text-neutral-300 hover:text-white hover:bg-white/10 select-none active:scale-95 transition-all flex items-center justify-center cursor-pointer"
           aria-label="Abrir menú"
         >
           <Menu className="w-5 h-5" />
@@ -316,9 +325,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 group min-w-0">
+                <div className="flex items-center gap-1 group min-w-0">
                   <h1
-                    className="truncate max-w-[140px] sm:max-w-xs text-sm font-medium text-white leading-normal"
+                    className="truncate max-w-[95px] xs:max-w-[130px] sm:max-w-xs text-xs sm:text-sm font-medium text-white leading-normal"
                     title={chat.title}
                   >
                     {chat.title}
@@ -326,7 +335,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsEditingTitle(true)}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 text-zinc-500 hover:text-white transition-opacity shrink-0 cursor-pointer"
+                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-zinc-500 hover:text-white transition-opacity shrink-0 cursor-pointer"
                     title="Renombrar chat"
                   >
                     <Edit2 size={11} />
@@ -354,11 +363,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       )}
 
       {/* UNIVERSAL MODEL HUB DROPDOWN */}
-      <div className="relative shrink-0 mr-2" ref={modelMenuRef}>
+      <div className="relative shrink-0 mr-1 sm:mr-2" ref={modelMenuRef}>
         <button
           type="button"
           onClick={() => setIsModelMenuOpen((prev) => !prev)}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 min-h-[44px] rounded-xl text-xs font-mono border transition-all cursor-pointer select-none active:scale-95 ${
+          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 min-h-[38px] sm:min-h-[44px] rounded-xl text-xs font-mono border transition-all cursor-pointer select-none active:scale-95 ${
             settings?.autoModelRouting
               ? 'bg-amber-500/10 dark:bg-[#161410] border-amber-500/40 text-amber-300 hover:border-amber-400'
               : 'bg-zinc-100 dark:bg-[#141418] border-zinc-300 dark:border-[#27272c] text-zinc-800 dark:text-zinc-200 hover:text-black dark:hover:text-white'
@@ -370,7 +379,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           }
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full ${
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
               settings?.autoModelRouting
                 ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]'
                 : currentProvider === 'alibaba'
@@ -380,7 +389,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     : 'bg-emerald-400'
             } animate-pulse`}
           />
-          <span className="text-[11px] font-semibold truncate max-w-[105px] sm:max-w-[145px] flex items-center gap-1">
+          <span className="text-[10.5px] sm:text-[11px] font-semibold truncate max-w-[78px] xs:max-w-[96px] sm:max-w-[145px] flex items-center gap-1">
             {settings?.autoModelRouting ? (
               <span className="flex items-center gap-1 text-amber-300">
                 <span>✦</span>
@@ -552,23 +561,128 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </span>
         </motion.button>
 
-        {/* Visual Infinite Continuous Context Gauge */}
-        <div
-          className="hidden lg:flex items-center gap-2 px-2.5 py-1 bg-[#09090b] border border-[#1f1f23] rounded-md shrink-0"
-          title={`Hilo Continuo Infinito: ${totalContextTokens.toLocaleString()} tokens procesados. Sin límites forzados ni necesidad de reiniciar el chat.`}
-        >
-          <Gauge size={12} className="text-white" />
-          <div className="flex flex-col">
-            <span className="text-[10px] font-mono text-white leading-tight">
-              Infinito · {formattedTokenCount} tok
-            </span>
-            <div className="w-16 h-1 bg-[#1a1a1e] rounded-full overflow-hidden mt-0.5">
-              <div
-                className="h-full bg-white transition-all duration-300"
-                style={{ width: `${Math.max(contextPercentage, 4)}%` }}
-              />
+        {/* Visual Infinite Continuous Context Gauge (Visible on both Mobile & PC) */}
+        <div className="relative shrink-0" ref={tokenGaugeRef}>
+          <button
+            type="button"
+            onClick={() => setIsTokenGaugeOpen((prev) => !prev)}
+            className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 min-h-[38px] sm:min-h-[40px] bg-[#0d0d12] hover:bg-[#14141c] border border-[#22222a] hover:border-[#343442] rounded-xl shrink-0 cursor-pointer active:scale-95 transition-all"
+            title={`Hilo Continuo Infinito: ${totalContextTokens.toLocaleString()} tokens procesados. Toca para ver desglose y documentos activos.`}
+          >
+            <Gauge size={12} className="text-emerald-400 shrink-0" />
+            <div className="flex flex-col items-start">
+              <span className="text-[9.5px] sm:text-[10px] font-mono text-white leading-tight whitespace-nowrap">
+                Infinito · {formattedTokenCount} tok
+              </span>
+              <div className="w-full min-w-[54px] sm:w-16 h-1 bg-[#1a1a22] rounded-full overflow-hidden mt-0.5">
+                <div
+                  className="h-full bg-emerald-400 transition-all duration-300"
+                  style={{ width: `${Math.max(contextPercentage, 5)}%` }}
+                />
+              </div>
             </div>
-          </div>
+          </button>
+
+          {/* Interactive Context & Quick Hub Popover for Mobile & PC */}
+          <AnimatePresence>
+            {isTokenGaugeOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-[118] bg-black/40 sm:bg-transparent"
+                  onClick={() => setIsTokenGaugeOpen(false)}
+                />
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                  transition={{ duration: 0.12 }}
+                  className="fixed right-2 left-2 top-14 sm:fixed-none sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 max-w-[calc(100vw-16px)] rounded-2xl bg-[#0e0e14] border border-white/15 p-3.5 shadow-2xl z-[120] text-white space-y-3"
+                >
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="flex items-center gap-2">
+                      <Gauge size={14} className="text-emerald-400" />
+                      <span className="text-xs font-semibold text-white">
+                        Hilo Continuo Infinito (1M)
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                      Activo
+                    </span>
+                  </div>
+
+                  {/* Token Gauge Meter */}
+                  <div className="p-2.5 rounded-xl bg-[#14141d] border border-white/10 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-zinc-400">Contexto en sesión:</span>
+                      <span className="text-white font-bold">
+                        {totalContextTokens.toLocaleString()} / 1,000,000 tok
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-[#09090d] rounded-full overflow-hidden border border-white/5">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-300"
+                        style={{ width: `${Math.max(contextPercentage, 3)}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-zinc-400 leading-relaxed pt-0.5">
+                      Memoria elástica activa: Kizuna conserva el hilo narrativo y tus documentos de Lore sin que tengas que reiniciar el chat.
+                    </p>
+                  </div>
+
+                  {/* Quick Mobile/PC Controls for Docs & Cajita */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsTokenGaugeOpen(false);
+                        onOpenFolderManager(folder?.id || 'general');
+                      }}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-[#15151f] hover:bg-[#1c1c28] border border-white/10 text-xs transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <BookOpen size={13} className="text-amber-400 shrink-0" />
+                        <span className="font-medium text-zinc-200">Docs Lore</span>
+                      </div>
+                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
+                        {activeLoreCount}/{availableLoreFiles.length}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsTokenGaugeOpen(false);
+                        onOpenMediaGallery();
+                      }}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-[#15151f] hover:bg-[#1c1c28] border border-white/10 text-xs transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <ImageIcon size={13} className="text-cyan-400 shrink-0" />
+                        <span className="font-medium text-zinc-200">La Cajita</span>
+                      </div>
+                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300">
+                        {sessionMediaCount}
+                      </span>
+                    </button>
+                  </div>
+
+                  {onOpenStats && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsTokenGaugeOpen(false);
+                        onOpenStats();
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-zinc-200 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <BarChart3 size={13} className="text-emerald-400" />
+                      <span>Ver Estadísticas y Actividad Completa</span>
+                    </button>
+                  )}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Day / Night Theme Toggle (Desktop quick toggle, mobile in overflow) */}
@@ -586,7 +700,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           <motion.button
             whileTap={{ scale: 0.94 }}
             onClick={() => setIsOverflowOpen(!isOverflowOpen)}
-            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-neutral-300 hover:text-white hover:bg-white/10 select-none active:scale-95 transition-all cursor-pointer"
+            className="p-1.5 sm:p-2 min-w-[38px] min-h-[38px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center rounded-xl text-neutral-300 hover:text-white hover:bg-white/10 select-none active:scale-95 transition-all cursor-pointer"
             aria-label="Más opciones"
             title="Más opciones"
           >
@@ -1203,7 +1317,7 @@ const UniversalModelDropdown: React.FC<{
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar modelo real (ej. qwen, deepseek, kimi, flash)..."
             className="w-full bg-white dark:bg-[#09090c] border border-zinc-300 dark:border-[#27272e] rounded-xl px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:border-amber-400 font-sans"
-            autoFocus
+            autoFocus={typeof window !== 'undefined' && window.innerWidth >= 640}
           />
 
           {/* Filter Pills with Safe Light/Dark Contrast */}

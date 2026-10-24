@@ -1545,7 +1545,40 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </button>
         )}
 
-        {/* 5. Llamada Omni Live Pill */}
+        {/* 5. Docs / Lore en Contexto Pill (Unified Mobile & PC Quick Access) */}
+        {onOpenLoreSelector && (
+          <button
+            type="button"
+            onClick={onOpenLoreSelector}
+            className={`kimi-pill-btn flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all shrink-0 font-medium cursor-pointer active:scale-95 border ${
+              activeLoreFilesCount > 0
+                ? 'bg-white/[0.08] border-white/25 text-white'
+                : 'bg-[#111115] border-[#22222a] text-zinc-400 hover:text-zinc-200 hover:bg-[#17171e]'
+            }`}
+            title="Gestionar Documentos y Lore en Contexto"
+          >
+            <BookOpen size={13} className={activeLoreFilesCount > 0 ? 'text-amber-400' : 'text-zinc-400'} />
+            <span>Docs</span>
+            <span className="text-[10px] font-mono text-zinc-300">
+              {activeLoreFilesCount}/{totalLoreFilesCount}
+            </span>
+          </button>
+        )}
+
+        {/* 6. La Cajita (Galería de Sesión) Pill */}
+        {onOpenMediaGallery && (
+          <button
+            type="button"
+            onClick={onOpenMediaGallery}
+            className="kimi-pill-btn flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#111115] border border-[#22222a] text-zinc-400 hover:text-zinc-200 hover:bg-[#17171e] transition-all shrink-0 font-medium cursor-pointer active:scale-95"
+            title="Abrir La Cajita (Galería Multimedia de Sesión)"
+          >
+            <ImageIcon size={13} className="text-zinc-400" />
+            <span>Cajita</span>
+          </button>
+        )}
+
+        {/* 7. Llamada Omni Live Pill */}
         {onStartVoiceCall && (
           <button
             type="button"

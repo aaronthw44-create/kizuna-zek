@@ -1067,22 +1067,22 @@ const UniversalModelDropdown: React.FC<{
               provider: 'gemini',
               description: m.description || 'Google Generative AI Engine',
               isVision: true,
-              hasReasoning: /2\.5|3\.[0-9]|4-|thinking/i.test(cleanId),
-              badge: cleanId.includes('3.6') ? 'Principal' : cleanId.includes('flash') ? 'Flash' : undefined,
+              hasReasoning: /3\.[0-9]|4-|thinking/i.test(cleanId),
+              badge: cleanId.includes('3.8') ? 'Flash 3.8' : cleanId.includes('argon') ? 'Argon' : undefined,
             });
           });
         }
       } catch {
         // Fallback core models
-        ['gemini-4-argon', 'gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.1-pro-preview', 'gemini-2.5-flash'].forEach((id) => {
+        ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.8-live', 'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite'].forEach((id) => {
           list.push({
             id,
-            name: id === 'gemini-4-argon' ? 'Gemini 4 Argon' : id,
+            name: id === 'gemini-4-argon' ? 'Gemini 4 Argon' : id === 'gemini-3.8-live' ? 'Gemini 3.8 Live' : id,
             provider: 'gemini',
             description: 'Google Generative AI Engine',
             isVision: true,
             hasReasoning: true,
-            badge: id === 'gemini-4-argon' ? 'Argon 4' : id.includes('3.6') ? 'Principal' : undefined,
+            badge: id === 'gemini-4-argon' ? 'Argon 4' : id.includes('3.8') ? 'SOTA Flash' : undefined,
           });
         });
       }
@@ -1214,7 +1214,7 @@ const UniversalModelDropdown: React.FC<{
           const loraModelId = settings?.alibabaCustomLoraModel?.trim();
           const topPriority = [
             ...(loraModelId ? [loraModelId] : []),
-            'deepseek-v4-pro-0813', 'deepseek-v4.1-flash-1017', 'qwen3.8-max-0902', 'qwen3.8-2.4-a95b', 'kimi-k3', 'qwen3.8-plus', 'qwen3.8-flash', 'qwen3.7-plus', 'qwen3.8-omni-flash', 'gemini-4-argon', 'qwen3.8-max', 'qwen-plus', 'gemini-3.6-flash', 'gemini-3.8-flash', 'moonshotai/kimi-k3', 'gemini-3.1-pro-preview', 'gemini-2.5-flash'
+            'deepseek-v4-pro-0813', 'deepseek-v4.1-flash-1017', 'qwen3.8-max-0902', 'qwen3.8-2.4-a95b', 'kimi-k3', 'qwen3.8-plus', 'qwen3.8-flash', 'qwen3.7-plus', 'qwen3.8-omni-flash', 'gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.8-live', 'qwen3.8-max', 'qwen-plus', 'moonshotai/kimi-k3', 'gemini-3.1-pro-preview'
           ];
           // Deduplicate list by provider and ID to avoid React key warnings
           const uniqueMap = new Map<string, LiveModelItem>();
@@ -1264,8 +1264,8 @@ const UniversalModelDropdown: React.FC<{
             { id: 'qwen3.7-plus', name: 'Qwen 3.7 Plus', provider: 'alibaba', description: 'Alibaba Cloud MaaS: Balanceado', isVision: true, hasReasoning: true, badge: '3.7 Plus' },
             { id: 'gemini-4-argon', name: 'Gemini 4 Argon', provider: 'gemini', description: 'Google AI Studio: SOTA Model', isVision: true, hasReasoning: true, badge: 'Argon 4' },
             { id: 'qwen3.8-max', name: 'Qwen 3.8 Max', provider: 'alibaba', description: 'Alibaba Cloud MaaS: Visión & CoT', isVision: true, hasReasoning: true, badge: 'Max' },
-            { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', provider: 'gemini', description: 'Google Generative AI', isVision: true, hasReasoning: true, badge: 'Principal' },
-            { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', provider: 'gemini', description: 'Google Generative AI', isVision: true, hasReasoning: true, badge: 'Flash' },
+            { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', provider: 'gemini', description: 'Google Generative AI', isVision: true, hasReasoning: true, badge: 'Flash 3.8' },
+            { id: 'gemini-3.8-live', name: 'Gemini 3.8 Live', provider: 'gemini', description: 'Google Generative AI (Llamada)', isVision: true, hasReasoning: true, badge: 'Live' },
             { id: 'moonshotai/kimi-k3', name: 'Kimi K3 (Moonshot)', provider: 'custom', description: 'NVIDIA NIM: MoE CoT & Visión', isVision: true, hasReasoning: true, badge: 'Narrativa' },
             { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: 'Nemotron 70B (NVIDIA)', provider: 'custom', description: 'NVIDIA NIM: Ultra-rápido', isVision: false, hasReasoning: true, badge: 'NVIDIA' },
           ]);

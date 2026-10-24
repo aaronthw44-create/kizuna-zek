@@ -164,7 +164,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const DEFAULT_GEMINI_MODELS = [
     'gemini-4-argon',
     'gemini-3.8-flash',
-    'gemini-3.6-flash',
+    'gemini-3.8-live',
     'gemini-3.1-pro-preview',
     'gemini-3.1-flash-lite',
     'gemini-flash-latest',
@@ -189,7 +189,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       settings.geminiModel.startsWith('gemini-2.') ||
       settings.geminiModel.startsWith('gemini-1.') ||
       settings.geminiModel === 'gemini-pro'
-        ? 'gemini-3.6-flash'
+        ? 'gemini-3.8-flash'
         : settings.geminiModel;
 
     const resolvedAliKey = (settings.alibabaApiKey || localStorage.getItem('kizuna_alibaba_api_key') || '').trim();

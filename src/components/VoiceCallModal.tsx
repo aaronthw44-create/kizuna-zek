@@ -572,8 +572,8 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     if (lower.includes('realtime')) return 'Qwen 3.8 Omni Flash Realtime';
     if (lower.includes('omni-turbo') || lower.includes('omni-mini')) return 'Qwen 3.8 Omni Mini';
     if (lower.includes('omni')) return 'Qwen 3.8 Omni Flash (Híbrido)';
-    if (lower.includes('2.5-flash')) return 'Gemini 2.5 Flash Live';
-    if (lower.includes('gemini')) return 'Gemini 3.6 Flash Live';
+    if (lower.includes('extended-thinking') || lower.includes('live-thinking')) return 'Gemini 3.8 Live Thinking';
+    if (lower.includes('3.8-live') || lower.includes('gemini')) return 'Gemini 3.8 Live';
     return 'Qwen 3.8 Omni Flash Realtime';
   };
 
@@ -640,15 +640,15 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                       provider: 'alibaba',
                     },
                     {
-                      id: 'gemini-3.6-flash',
-                      name: 'Gemini 3.6 Flash Live',
-                      desc: 'Motor multimodal en vivo de Google',
+                      id: 'gemini-3.8-live',
+                      name: 'Gemini 3.8 Live',
+                      desc: 'Motor multimodal de baja latencia en vivo de Google',
                       provider: 'gemini',
                     },
                     {
-                      id: 'gemini-2.5-flash',
-                      name: 'Gemini 2.5 Flash Live',
-                      desc: 'Baja latencia y alta disponibilidad',
+                      id: 'gemini-3.8-live-extended-thinking',
+                      name: 'Gemini 3.8 Live Thinking',
+                      desc: 'Razonamiento complejo e inferencia paso a paso',
                       provider: 'gemini',
                     },
                   ].map((m) => {

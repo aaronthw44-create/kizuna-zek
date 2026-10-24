@@ -320,8 +320,8 @@ app.get('/api/search', async (req, res) => {
     });
 
     const candidateModels = [
-      'gemini-3.6-flash',
       'gemini-3.8-flash',
+      'gemini-4-argon',
       'gemini-3.1-flash-lite',
       'gemini-flash-latest',
     ];
@@ -434,7 +434,7 @@ app.get('/api/gemini/models', async (req, res) => {
   const defaultCoreModels = [
     { id: 'gemini-4-argon', displayName: 'Gemini 4 Argon', description: 'Modelo SOTA de Google para razonamiento profundo, lore y creatividad' },
     { id: 'gemini-3.8-flash', displayName: 'Gemini 3.8 Flash', description: 'Ultra-rápido para chat continuo y alta cadencia' },
-    { id: 'gemini-3.6-flash', displayName: 'Gemini 3.6 Flash', description: 'Multimodal de alta velocidad, baja latencia y 1M contexto' },
+    { id: 'gemini-3.8-live', displayName: 'Gemini 3.8 Live', description: 'Motor multimodal en vivo para llamadas de voz y baja latencia' },
     { id: 'gemini-3.1-pro-preview', displayName: 'Gemini 3.1 Pro Preview', description: 'Alta capacidad analítica para lógica compleja y manuscritos' },
     { id: 'gemini-3.1-flash-lite', displayName: 'Gemini 3.1 Flash Lite', description: 'Ultra liviano y máxima velocidad' },
     { id: 'gemini-flash-latest', displayName: 'Gemini Flash Latest', description: 'Última versión estable de Gemini Flash' },
@@ -485,7 +485,7 @@ app.get('/api/gemini/models', async (req, res) => {
     const priorityOrder = [
       'gemini-4-argon',
       'gemini-3.8-flash',
-      'gemini-3.6-flash',
+      'gemini-3.8-live',
       'gemini-3.1-pro-preview',
       'gemini-3.1-flash-lite',
       'gemini-flash-latest',

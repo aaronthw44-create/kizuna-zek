@@ -308,6 +308,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     type="text"
                     value={titleInput}
                     onChange={(e) => setTitleInput(e.target.value)}
+                    onBlur={handleSaveTitle}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleSaveTitle();
                       if (e.key === 'Escape') setIsEditingTitle(false);
@@ -317,8 +318,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   />
                   <button
                     type="button"
+                    onMouseDown={(e) => e.preventDefault()} // prevent input blur before button click
                     onClick={handleSaveTitle}
-                    className="p-1 text-white hover:bg-white/10 rounded shrink-0 cursor-pointer"
+                    className="p-1 min-h-[32px] min-w-[32px] text-white hover:bg-white/10 rounded shrink-0 cursor-pointer flex items-center justify-center"
+                    title="Guardar título"
                   >
                     <Check size={13} />
                   </button>
@@ -326,7 +329,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               ) : (
                 <div className="flex items-center gap-1 group min-w-0">
                   <h1
-                    className="truncate max-w-[160px] xs:max-w-[210px] sm:max-w-xs text-xs sm:text-sm font-medium text-white leading-normal"
+                    className="truncate max-w-[160px] xs:max-w-[210px] sm:max-w-xs text-xs sm:text-sm font-medium text-white leading-normal select-text"
                     title={chat.title}
                   >
                     {chat.title}
@@ -334,10 +337,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsEditingTitle(true)}
-                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-0.5 text-zinc-500 hover:text-white transition-opacity shrink-0 cursor-pointer"
+                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1 min-h-[32px] min-w-[32px] text-zinc-400 hover:text-white transition-opacity shrink-0 cursor-pointer flex items-center justify-center"
                     title="Renombrar chat"
                   >
-                    <Edit2 size={11} />
+                    <Edit2 size={12} />
                   </button>
                 </div>
               )}

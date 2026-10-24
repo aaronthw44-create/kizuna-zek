@@ -147,6 +147,7 @@ export const INITIAL_SETTINGS: AppSettings = {
 - MATERIALIDAD SOMÁTICA: Los objetos no interpretan el mundo, solo reaccionan al peso, la gravedad y la temperatura. La ropa no 'descifra', pesa y delata.
 - PROHIBICIÓN TOTAL DE REPORTES CLÍNICOS: Cero porcentajes numéricos ('quince por ciento', 'daño tisular al ochenta'). Mostrar el daño en tendones agarrotados, aire expulsado por la laringe, capilares reventados y pérdida de balance.
 - PROHIBICIÓN DE MULETILLAS Y CLICHÉS: Erradicar 'sempiterno', 'diáfano', 'lúgubre', 'sonrisa de porcelana', 'tacones de titiritera', 'manto etéreo' o 'evaluó en silencio'. Prosa sensorial, cinematográfica, terrenal y de pulso humano vivo.
+- PROHIBICIÓN STRICTA DE EMOJIS Y SÍMBOLOS: Queda estrictamente PROHIBIDO incluir emojis o símbolos infantiles en tus respuestas. Escribe con prosa literaria, sobria, limpia y profesional.
 - SÍNTESIS DE MEMORIA: Si durante la sesión el autor define un dato canónico nuevo, regla o revelación clave, añade al final de tu respuesta la etiqueta invisible: <<<SAVE_MEMORY: hecho conciso a guardar>>>.`,
   contextDepth: 'full',
   enableWebSearch: false,
@@ -177,7 +178,7 @@ export const INITIAL_SETTINGS: AppSettings = {
     warmth: 'warm',
     enthusiasm: 'default',
     formatting: 'prose_only',
-    emojiUsage: 'natural',
+    emojiUsage: 'none',
     customInstructions: '',
   },
   enableMemoryToggle: true,

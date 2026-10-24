@@ -1097,17 +1097,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                   <button
                     type="button"
                     onClick={() => setIsThoughtOpen((prev) => !prev)}
-                    className="inline-flex items-center gap-2 flex-wrap px-3 py-1.5 min-h-[36px] rounded-xl text-xs font-mono text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-900/60 hover:bg-zinc-200 dark:hover:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 transition-colors cursor-pointer select-none"
+                    className="inline-flex items-center gap-2 flex-wrap px-3 py-1.5 min-h-[36px] rounded-xl text-xs font-sans font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-900/60 hover:bg-zinc-200 dark:hover:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 transition-colors cursor-pointer select-none"
                   >
-                    <span className="text-orange-500">💧</span>
+                    <Brain size={13} className="text-amber-400 shrink-0" />
                     <span>
                       {isThoughtOpen
                         ? 'Ocultar pensamiento'
                         : `Pensado durante ${thinkingDuration.toFixed(1)}s`}
                     </span>
                     {(message.modelName || message.modelId) && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/35 text-amber-700 dark:text-amber-300 text-[10px] font-semibold">
-                        <span>✦</span>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/35 text-amber-700 dark:text-amber-300 text-[11px] font-medium font-sans">
+                        <Sparkles size={11} className="text-amber-400 shrink-0" />
                         <span>{message.modelName || message.modelId}</span>
                       </span>
                     )}
@@ -1123,41 +1123,50 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                       className="mt-2.5 p-4 rounded-2xl bg-zinc-100 dark:bg-[#151518] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-200 shadow-xl space-y-3.5 select-text font-sans"
                     >
                       <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/5 pb-2">
-                        <span className="text-[11px] font-mono text-zinc-600 dark:text-zinc-400 font-medium">
-                          Proceso de pensamiento · {message.modelName || message.modelId || 'Modelo Activo'}
+                        <span className="text-[12px] font-sans text-zinc-600 dark:text-zinc-400 font-semibold flex items-center gap-1.5">
+                          <Brain size={13} className="text-amber-400" />
+                          <span>Proceso de pensamiento · {message.modelName || message.modelId || 'Modelo Activo'}</span>
                         </span>
-                        <span className="text-[10px] font-mono text-zinc-500">{thinkingDuration.toFixed(1)}s</span>
+                        <span className="text-[11px] font-sans text-zinc-400 font-medium">{thinkingDuration.toFixed(1)}s</span>
                       </div>
 
                       {/* Línea de tiempo vertical con las etapas */}
-                      <div className="relative pl-3.5 border-l-2 border-orange-500/40 dark:border-zinc-700/60 space-y-3 my-1">
+                      <div className="relative pl-3.5 border-l-2 border-amber-500/40 dark:border-amber-500/30 space-y-3 my-1 font-sans">
                         {message.autoRouteReason && (
                           <div className="space-y-1 pb-2 border-b border-zinc-200/60 dark:border-white/5">
-                            <h4 className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                              <span>✦</span>
+                            <h4 className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 font-sans">
+                              <Sparkles size={12} className="text-amber-400 shrink-0" />
                               <span>Enrutador Inteligente (Modo Automático)</span>
                             </h4>
-                            <p className="text-[12px] text-zinc-700 dark:text-zinc-300 leading-relaxed font-mono">
+                            <p className="text-[13px] text-zinc-700 dark:text-zinc-300 leading-relaxed font-sans font-normal">
                               {message.autoRouteReason}
                             </p>
                           </div>
                         )}
                         <div className="space-y-1">
-                          <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">Revisión de Contexto y Directivas</h4>
-                          <p className="text-[12px] text-zinc-600 dark:text-zinc-400 leading-relaxed italic whitespace-pre-wrap max-h-60 overflow-y-auto">
-                            {thoughtContent || message.autoRouteReason || "Evaluando el tono somático, registros de lore y continuidad de la escena..."}
-                          </p>
+                          <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 font-sans">
+                            Razonamiento Interno del Modelo
+                          </h4>
+                          {thoughtContent ? (
+                            <p className="text-[13.5px] sm:text-[14px] text-zinc-700 dark:text-zinc-300 leading-relaxed font-sans font-normal whitespace-pre-wrap max-h-72 overflow-y-auto">
+                              {thoughtContent}
+                            </p>
+                          ) : (
+                            <p className="text-[12.5px] text-zinc-500 dark:text-zinc-400 italic font-sans font-normal">
+                              Respuesta directa: El modelo respondió en modo instantáneo sin requerir cadena de pensamiento extendida.
+                            </p>
+                          )}
                         </div>
                       </div>
 
                       {/* Cierre limpio de verificación */}
-                      <div className="pt-2 border-t border-zinc-200 dark:border-white/5 flex items-center justify-between text-[11px] font-mono text-zinc-600 dark:text-zinc-400">
-                        <div className="flex items-center gap-1.5 text-orange-500 font-medium">
-                          <span>✓</span>
-                          <span>Listo</span>
+                      <div className="pt-2 border-t border-zinc-200 dark:border-white/5 flex items-center justify-between text-[11px] font-sans text-zinc-600 dark:text-zinc-400">
+                        <div className="flex items-center gap-1.5 text-amber-500 font-semibold">
+                          <Check size={12} className="text-amber-400" />
+                          <span>Respuesta completada</span>
                         </div>
-                        <div className="flex items-center gap-1 text-orange-500 font-semibold">
-                          <span>✦</span>
+                        <div className="flex items-center gap-1 text-amber-500 font-semibold">
+                          <Sparkles size={11} className="text-amber-400" />
                           <span>{message.modelName || message.modelId || "Qwen 3.8 Max 0902"}</span>
                         </div>
                       </div>

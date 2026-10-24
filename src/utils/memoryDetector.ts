@@ -229,10 +229,14 @@ REGLAS ESTRICTAS DE SÍNTESIS:
   const sysInstruction =
     'Eres el sintetizador de memoria contextual de Kizuna-Zek. Tu única tarea es condensar el historial de conversación en apuntes ejecutivos sobrios, sin emojis, sin saludos y sin preámbulos.';
 
-  const rawAlibabaModel = settings.alibabaModel || 'qwen3.8-max';
+  const rawAlibabaModel = settings.alibabaModel || 'deepseek-v4.1-flash-1017';
+  const alibabaFlashCandidate =
+    settings.fetchedAlibabaModels?.find((m) => /deepseek.*(v4\.1.*flash|flash.*1017)/i.test(m.id))?.id ||
+    'deepseek-v4.1-flash-1017';
+
   const cleanAlibabaModel = /llama|nemotron|nvdev|mistralai|meta\/|qwen-long/i.test(rawAlibabaModel)
-    ? 'qwen3.8-omni-flash'
-    : rawAlibabaModel;
+    ? alibabaFlashCandidate
+    : (rawAlibabaModel.includes('deepseek') || rawAlibabaModel.includes('flash') ? rawAlibabaModel : alibabaFlashCandidate);
 
   const targetModelId =
     settings.provider === 'alibaba'

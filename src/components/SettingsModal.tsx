@@ -467,10 +467,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   // Default curated Alibaba models for Singapore (ap-southeast-1)
   const defaultAlibabaPresetModels: NvidiaModelItem[] = useMemo(() => [
-    { id: 'qwen3.8-omni-flash', owned_by: 'Alibaba Singapur (Omni Multimodal • 1M Tokens • Ultra Económico)' },
-    { id: 'kimi-k3', owned_by: 'Alibaba Singapur (1M Cuota Gratis • Tope de Seguridad Activo • 100K RPM)' },
+    { id: 'deepseek-v4-pro-0813', owned_by: 'Alibaba Singapur (1.6T MoE • 49B activos • $0.66/1M • Auditor & Diálogos)' },
+    { id: 'deepseek-v4.1-flash-1017', owned_by: 'Alibaba Singapur (552B MoE • Multimodal • $0.15/1M • Co-agente y Resúmenes)' },
     { id: 'qwen3.8-max-0902', owned_by: 'Alibaba Singapur (Flagship 0902 con Thinking CoT Profundo)' },
     { id: 'qwen3.8-2.4-a95b', owned_by: 'Alibaba Singapur (Arquitectura MoE A95B • Alta Densidad y CoT)' },
+    { id: 'kimi-k3', owned_by: 'Alibaba Singapur (1M Cuota Gratis • Tope de Seguridad Activo • 100K RPM)' },
+    { id: 'qwen3.8-omni-flash', owned_by: 'Alibaba Singapur (Omni Multimodal • 1M Tokens • Ultra Económico)' },
     { id: 'qwen3.8-max', owned_by: 'Alibaba Singapur (SOTA con Thinking CoT)' },
     { id: 'qwen3.8-flash', owned_by: 'Alibaba Singapur (1M Contexto • Ultra-rápido con Thinking)' },
     { id: 'qwen3.8-plus', owned_by: 'Alibaba Singapur (1M Contexto Extendido y Visión)' },
@@ -499,7 +501,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       return matchesSearch && matchesVision;
     });
 
-    const favSet = new Set(current.favoriteAlibabaModelIds || ['qwen3.8-max-0902', 'qwen3.8-2.4-a95b', 'qwen3.8-omni-flash', 'qwen3.8-max', 'qwen3.8-flash', 'qwen3.8-plus', 'qwen3.7-plus', 'qwen-plus']);
+    const favSet = new Set(current.favoriteAlibabaModelIds || ['deepseek-v4-pro-0813', 'deepseek-v4.1-flash-1017', 'qwen3.8-max-0902', 'qwen3.8-2.4-a95b', 'kimi-k3', 'qwen3.8-omni-flash', 'qwen3.8-max', 'qwen3.8-flash', 'qwen3.8-plus', 'qwen3.7-plus', 'qwen-plus']);
     const favs: NvidiaModelItem[] = [];
     const others: NvidiaModelItem[] = [];
 

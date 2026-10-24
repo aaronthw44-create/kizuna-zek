@@ -77,9 +77,11 @@ const AUDITOR_MODEL_GROUPS: AuditorModelGroup[] = [
     title: 'Alibaba Cloud MaaS',
     icon: '☁️',
     models: [
-      { id: 'qwen3.8-max', provider: 'alibaba', name: 'Qwen 3.8 Max', badge: 'Thinking CoT', icon: '🧠' },
-      { id: 'qwen3.8-flash', provider: 'alibaba', name: 'Qwen 3.8 Flash', badge: 'Alta Cadencia', icon: '⚡' },
+      { id: 'deepseek-v4-pro-0813', provider: 'alibaba', name: 'DeepSeek V4 Pro (0813)', badge: 'Auditor Maestro · 1.6T MoE', icon: '🧠' },
+      { id: 'deepseek-v4.1-flash-1017', provider: 'alibaba', name: 'DeepSeek V4.1 Flash', badge: 'Flash MoE · $0.15/1M', icon: '⚡' },
+      { id: 'qwen3.8-max-0902', provider: 'alibaba', name: 'Qwen 3.8 Max 0902', badge: 'Flagship CoT', icon: '🧠' },
       { id: 'kimi-k3', provider: 'alibaba', name: 'Kimi K3 (Moonshot)', badge: 'Prosa & Lore', icon: '📜' },
+      { id: 'qwen3.8-flash', provider: 'alibaba', name: 'Qwen 3.8 Flash', badge: 'Alta Cadencia', icon: '⚡' },
     ],
   },
   {

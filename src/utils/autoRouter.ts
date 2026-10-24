@@ -15,11 +15,27 @@ export interface AutoRouteDecision {
  */
 function resolveAlibabaModelId(
   settings: AppSettings,
-  targetKey: 'max-0902' | '2.4-a95b' | 'kimi-k3' | 'flash' | '3.8-plus' | '3.7-plus'
+  targetKey: 'max-0902' | '2.4-a95b' | 'kimi-k3' | 'flash' | '3.8-plus' | '3.7-plus' | 'deepseek-pro-0813' | 'deepseek-flash'
 ): string {
   const fetched = Array.isArray(settings.fetchedAlibabaModels)
     ? settings.fetchedAlibabaModels.map((m) => m.id)
     : [];
+
+  if (targetKey === 'deepseek-pro-0813') {
+    const exact0813 = fetched.find((id) => /deepseek.*(v4.*pro.*0813|pro.*0813|v4-pro-0813)/i.test(id));
+    if (exact0813) return exact0813;
+    const anyPro = fetched.find((id) => /deepseek.*v4.*pro/i.test(id));
+    if (anyPro) return anyPro;
+    return 'deepseek-v4-pro-0813';
+  }
+
+  if (targetKey === 'deepseek-flash') {
+    const exactFlash = fetched.find((id) => /deepseek.*(v4\.1.*flash.*1017|flash.*1017|v4\.1-flash)/i.test(id));
+    if (exactFlash) return exactFlash;
+    const anyFlash = fetched.find((id) => /deepseek.*(v4.*flash|flash)/i.test(id));
+    if (anyFlash) return anyFlash;
+    return 'deepseek-v4.1-flash-1017';
+  }
 
   if (targetKey === 'max-0902') {
     const exact0902 = fetched.find((id) => /3\.8.*max.*0902|max.*0902/i.test(id));
@@ -59,7 +75,7 @@ function resolveAlibabaModelId(
     return 'qwen3.7-plus';
   }
 
-  return 'qwen3.8-max-0902';
+  return 'deepseek-v4-pro-0813';
 }
 
 /**
@@ -108,26 +124,78 @@ export function resolveAutoRoutedModel(
     };
   }
 
-  // 2. Multimodal Image Analysis or Deep Analytical / Logical / Code / Audit Task -> Kimi K3
-  const analyticalPattern =
-    /\b(analiza|audita|auditoría|auditoria|inconsistencia|contradicción|contradiccion|lógica|logica|por qué|por que|evalúa|evalua|estructura argumental|subtexto|psicología|psicologia|código|codigo|bug|función|funcion|typescript|react|algoritmo|arquitectura|compara|comparación|estrategia|deduce|demuestra|calcula|matemática|critica|crítica|revisa a fondo)\b/i;
+  // 2. Multimodal Image Analysis -> Kimi K3 (Visión)
+  if (hasImages) {
+    const useAlibabaForKimi = hasAlibabaKey || settings.provider === 'alibaba';
+    return {
+      provider: useAlibabaForKimi ? 'alibaba' : hasNvidiaKey ? 'custom' : defaultProvider,
+      modelId: useAlibabaForKimi ? resolveAlibabaModelId(settings, 'kimi-k3') : 'moonshotai/kimi-k3',
+      modelLabel: 'Kimi K3 (Visión)',
+      reason: 'Modo Automático: Imagen detectada en contexto; enrutado a Kimi K3 (Visión + CoT).',
+      recommendedReasoningMode: 'deep',
+    };
+  }
 
-  if (hasImages || analyticalPattern.test(lower)) {
+  // 3. Auditoría de Lore, Canon, Inconsistencias y Coherencia Lógica -> DeepSeek V4 Pro 0813 (1.6T MoE, $0.66/1M)
+  const loreAuditPattern =
+    /\b(audita|auditoría|auditoria|inconsistencia|contradicción|contradiccion|revisa el canon|coherencia|revisión crítica|revision critica|fallo de trama|agujero de guion|agujero de guión|error de continuidad|evalúa la lógica|evalua la logica|auditor)\b/i;
+
+  if (loreAuditPattern.test(lower)) {
+    return {
+      provider: defaultProvider === 'custom' && hasAlibabaKey ? 'alibaba' : defaultProvider,
+      modelId: resolveAlibabaModelId(settings, 'deepseek-pro-0813'),
+      modelLabel: 'DeepSeek V4 Pro 0813',
+      reason: 'Modo Automático: Auditoría de canon, coherencia e inconsistencias asignada a DeepSeek V4 Pro 0813 (1.6T MoE, $0.66/1M).',
+      recommendedReasoningMode: 'deep',
+    };
+  }
+
+  // 4. Instrucción Narrativa, Escaleta, Arcos Dramáticos & Arquitectura de Novela -> DeepSeek V4 Pro 0813
+  const narrativeInstructionPattern =
+    /\b(instrucción narrativa|instruccion narrativa|escaleta|arco dramático|arco dramatico|estructura del capítulo|estructura del capitulo|arquitectura de deseos|catarsis|diseño de escena|beat sheet|puntos de giro|clímax|climax|planificación del arco|planificacion del arco|guía narrativa|guia narrativa)\b/i;
+
+  if (narrativeInstructionPattern.test(lower)) {
+    return {
+      provider: defaultProvider === 'custom' && hasAlibabaKey ? 'alibaba' : defaultProvider,
+      modelId: resolveAlibabaModelId(settings, 'deepseek-pro-0813'),
+      modelLabel: 'DeepSeek V4 Pro 0813',
+      reason: 'Modo Automático: Instrucción y arquitectura narrativa asignada a DeepSeek V4 Pro 0813 (1.6T MoE, titán editorial).',
+      recommendedReasoningMode: 'deep',
+    };
+  }
+
+  // 5. Diálogos con Subtexto, Tensión Psicológica y Voces de Personajes -> DeepSeek V4 Pro 0813
+  const dialogueSubtextPattern =
+    /\b(subtexto|diálogo|dialogo|diálogos|dialogos|discusión|discusion|conversación entre|conversacion entre|tensión entre|tension entre|interacción psicológica|interaccion psicologica|voz de kolder|voz de hinistra|voz de jukkou|voz de zankyou|voz de gurasha|monólogo interior|monologo interior|enfrentamiento verbal)\b/i;
+
+  if (dialogueSubtextPattern.test(lower) && !/\b(resumen|ficha|hola)\b/i.test(lower)) {
+    return {
+      provider: defaultProvider === 'custom' && hasAlibabaKey ? 'alibaba' : defaultProvider,
+      modelId: resolveAlibabaModelId(settings, 'deepseek-pro-0813'),
+      modelLabel: 'DeepSeek V4 Pro 0813',
+      reason: 'Modo Automático: Diálogo con subtexto y tensión psicológica asignado a DeepSeek V4 Pro 0813 (1.6T MoE).',
+      recommendedReasoningMode: 'deep',
+    };
+  }
+
+  // 6. Deep Analytical / Code / Math / Complex Deduction -> Kimi K3
+  const deepAnalyticalPattern =
+    /\b(código|codigo|bug|función|funcion|typescript|react|algoritmo|arquitectura de software|compara|comparación|deduce|demuestra|calcula|matemática|por qué exactamente|por que exactamente)\b/i;
+
+  if (deepAnalyticalPattern.test(lower)) {
     const useAlibabaForKimi = hasAlibabaKey || settings.provider === 'alibaba';
     return {
       provider: useAlibabaForKimi ? 'alibaba' : hasNvidiaKey ? 'custom' : defaultProvider,
       modelId: useAlibabaForKimi ? resolveAlibabaModelId(settings, 'kimi-k3') : 'moonshotai/kimi-k3',
       modelLabel: 'Kimi K3',
-      reason: hasImages
-        ? 'Modo Automático: Imagen detectada en contexto; enrutado a Kimi K3 (Visión + CoT).'
-        : 'Modo Automático: Consulta de análisis profundo, lógica o auditoría asignada a Kimi K3.',
+      reason: 'Modo Automático: Razonamiento técnico o deducción matemática asignada a Kimi K3.',
       recommendedReasoningMode: 'deep',
     };
   }
 
-  // 3. Complex Worldbuilding Mechanics, Factions, Multi-Character Dynamics & Dense Lore Architecture -> Qwen3.8-2.4-A95B
+  // 7. Complex Worldbuilding Mechanics, Factions, Multi-Character Dynamics & Dense Lore Systems -> Qwen3.8-2.4-A95B
   const moeArchitecturePattern =
-    /\b(a95b|sistema de magia|mecánica|mecanica|jerarquía|jerarquia|facciones|facción|faccion|política|politica|geopolítica|cronología|cronologia|línea temporal|linea temporal|árbol genealógico|batalla|combate|táctica|tactica|coreografía|coreografia|múltiples personajes|varios personajes|construcción de mundo|worldbuilding|skarnita|catarsis|red de relaciones|ecosistema|mitología|mitologia)\b/i;
+    /\b(a95b|sistema de magia|mecánica|mecanica|jerarquía|jerarquia|facciones|facción|faccion|política|politica|geopolítica|cronología|cronologia|línea temporal|linea temporal|árbol genealógico|batalla|combate|táctica|tactica|coreografía|coreografia|múltiples personajes|varios personajes|construcción de mundo|worldbuilding|skarnita|red de relaciones|ecosistema|mitología|mitologia)\b/i;
 
   if (moeArchitecturePattern.test(lower) || (charLen > 240 && /\b(lore|canon|bóveda|boveda|monstereth|teshuvana|tedriot)\b/i.test(lower) && !/\b(escribe el capítulo|redacta la escena)\b/i.test(lower))) {
     return {
@@ -139,9 +207,9 @@ export function resolveAutoRoutedModel(
     };
   }
 
-  // 4. Creative Writing, Novel Chapters, Prose & Emotional Scenes -> Qwen3.8-Max 0902
+  // 8. Creative Writing, Full Novel Chapters, Dense Literary Prose -> Qwen3.8-Max 0902
   const creativeProsePattern =
-    /\b(escribe|redacta|narra|capítulo|capitulo|escena|diálogo|dialogo|prosa|novela|manuscrito|reescribe|continúa|continua|kolder|hinistra|jukkou|zankyou|gurasha|monólogo|monologo|relato)\b/i;
+    /\b(escribe|redacta|narra|capítulo|capitulo|escena|prosa|novela|manuscrito|reescribe|continúa|continua|relato)\b/i;
 
   if (creativeProsePattern.test(lower) || charLen > 420 || wordCount > 75) {
     return {
@@ -151,14 +219,28 @@ export function resolveAutoRoutedModel(
       reason:
         charLen > 420
           ? 'Modo Automático: Prompt literario extenso asignado a Qwen 3.8 Max 0902.'
-          : 'Modo Automático: Redacción literaria, escena o diálogo asignado a Qwen 3.8 Max 0902.',
+          : 'Modo Automático: Redacción literaria o escena principal asignada a Qwen 3.8 Max 0902.',
       recommendedReasoningMode: 'deep',
     };
   }
 
-  // 5. Long Context Synthesis, Attached Documents, Character Sheets, Deep Summaries -> Qwen3.8-Plus
+  // 9. Co-agente Ágil para Novela Ligera (Borradores rápidos, lluvia de ideas, esquema veloz en ráfaga junto a Flash) -> DeepSeek V4.1 Flash (552B MoE, $0.15/1M)
+  const coAgentDraftPattern =
+    /\b(borrador rápido|borrador rapido|ayúdame a pensar|ayudame a pensar|ideas rápidas|ideas rapidas|brainstorm|tirame ideas|tírame ideas|qué se te ocurre|que se te ocurre|co-agente|coagente|agente de novela|esquema rápido|esquema rapido|sugerencias rápidas|sugerencias rapidas|propón alternativas|propon alternativas)\b/i;
+
+  if (coAgentDraftPattern.test(lower)) {
+    return {
+      provider: defaultProvider === 'custom' && hasAlibabaKey ? 'alibaba' : defaultProvider,
+      modelId: resolveAlibabaModelId(settings, 'deepseek-flash'),
+      modelLabel: 'DeepSeek V4.1 Flash 1017',
+      reason: 'Modo Automático: Co-agente ágil para novela ligera asignado a DeepSeek V4.1 Flash (552B MoE, $0.15/1M).',
+      recommendedReasoningMode: 'light',
+    };
+  }
+
+  // 10. Long Context Synthesis, Attached Documents, Character Sheets -> Qwen3.8-Plus
   const plusSynthesisPattern =
-    /\b(ficha|perfil|resumen detallado|sintetiza|síntesis|sintesis|escaleta|estructura del arco|desglose|documentación|documentacion|contexto completo|explica en detalle|desarrolla)\b/i;
+    /\b(ficha|perfil|resumen detallado|sintetiza|síntesis|sintesis|desglose|documentación|documentacion|contexto completo|explica en detalle|desarrolla)\b/i;
 
   if (hasDocuments || plusSynthesisPattern.test(lower) || (charLen > 180 && charLen <= 420)) {
     return {
@@ -172,7 +254,7 @@ export function resolveAutoRoutedModel(
     };
   }
 
-  // 6. Fast / Short / Casual / Direct Queries -> Qwen3.8-Flash
+  // 11. Fast / Short / Casual / Direct Queries -> Qwen3.8-Flash
   const fastQueryPattern =
     /\b(rápido|rapido|en corto|breve|dime rápido|hola|buenas|hey|gracias|ok|vale|listo|qué tal|que tal|cómo estás|como estas|buen día|buenas noches)\b/i;
 
@@ -190,12 +272,12 @@ export function resolveAutoRoutedModel(
     };
   }
 
-  // 7. Intermediate / Balanced Tasks (Brainstorming, Quick Outlines, General Questions) -> Qwen3.7-Plus
+  // 12. Intermediate / Balanced Tasks -> Qwen3.7-Plus
   return {
     provider: defaultProvider === 'custom' && hasAlibabaKey ? 'alibaba' : defaultProvider,
     modelId: resolveAlibabaModelId(settings, '3.7-plus'),
     modelLabel: 'Qwen 3.7 Plus',
-    reason: 'Modo Automático: Consulta balanceada o lluvia de ideas asignada a Qwen 3.7 Plus.',
+    reason: 'Modo Automático: Consulta balanceada o desarrollo equilibrado asignado a Qwen 3.7 Plus.',
     recommendedReasoningMode: 'light',
   };
 }

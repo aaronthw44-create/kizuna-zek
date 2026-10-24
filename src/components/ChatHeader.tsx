@@ -364,7 +364,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           }`}
           title={
             settings?.autoModelRouting
-              ? 'Modo Automático Activo: Alterna entre Qwen 3.8 Max 0902, Kimi K3, Qwen 3.8 Flash y Qwen 3.7 Plus según tu mensaje'
+              ? 'Modo Automático Activo: Alterna entre Qwen 3.8 Max, DeepSeek V4 Pro 0813, Kimi K3, Qwen 2.4-A95B, DeepSeek V4.1 Flash, Qwen Flash y Qwen Plus'
               : 'Cambiar modelo activo'
           }
         >
@@ -1070,6 +1070,8 @@ const UniversalModelDropdown: React.FC<{
 
       // Add preset Alibaba core models supported in Singapore (ap-southeast-1)
       const alibabaPresets: LiveModelItem[] = [
+        { id: 'deepseek-v4-pro-0813', name: 'DeepSeek V4 Pro 0813 (1.6T MoE)', provider: 'alibaba', description: 'Alibaba Singapur: 1.6T MoE (49B activos) • $0.66/1M • Auditor & Diálogos con Subtexto', isVision: false, hasReasoning: true, badge: 'V4 Pro 0813' },
+        { id: 'deepseek-v4.1-flash-1017', name: 'DeepSeek V4.1 Flash (1017)', provider: 'alibaba', description: 'Alibaba Singapur: 552B MoE (~8B activos) • Multimodal • $0.15/1M • Co-agente Ágil', isVision: true, hasReasoning: true, badge: 'V4.1 Flash' },
         { id: 'qwen3.8-max-0902', name: 'Qwen 3.8 Max 0902 (Último)', provider: 'alibaba', description: 'Alibaba Singapur: Flagship 0902 con Thinking CoT Profundo', isVision: false, hasReasoning: true, badge: '0902 SOTA' },
         { id: 'qwen3.8-2.4-a95b', name: 'Qwen 3.8 2.4-A95B (MoE)', provider: 'alibaba', description: 'Alibaba Singapur: Arquitectura MoE A95B Activos + Thinking CoT', isVision: false, hasReasoning: true, badge: 'A95B MoE' },
         { id: 'kimi-k3', name: 'Kimi K3 (1M Cuota Gratis)', provider: 'alibaba', description: 'Alibaba Singapur: 1M Tokens Gratis + Tope de Seguridad Activo', isVision: true, hasReasoning: true, badge: 'K3 Gratis' },
@@ -1094,7 +1096,7 @@ const UniversalModelDropdown: React.FC<{
           const loraModelId = settings?.alibabaCustomLoraModel?.trim();
           const topPriority = [
             ...(loraModelId ? [loraModelId] : []),
-            'qwen3.8-max-0902', 'qwen3.8-2.4-a95b', 'kimi-k3', 'qwen3.8-plus', 'qwen3.8-flash', 'qwen3.7-plus', 'qwen3.8-omni-flash', 'gemini-4-argon', 'qwen3.8-max', 'qwen-plus', 'gemini-3.6-flash', 'gemini-3.8-flash', 'moonshotai/kimi-k3', 'gemini-3.1-pro-preview', 'gemini-2.5-flash'
+            'deepseek-v4-pro-0813', 'deepseek-v4.1-flash-1017', 'qwen3.8-max-0902', 'qwen3.8-2.4-a95b', 'kimi-k3', 'qwen3.8-plus', 'qwen3.8-flash', 'qwen3.7-plus', 'qwen3.8-omni-flash', 'gemini-4-argon', 'qwen3.8-max', 'qwen-plus', 'gemini-3.6-flash', 'gemini-3.8-flash', 'moonshotai/kimi-k3', 'gemini-3.1-pro-preview', 'gemini-2.5-flash'
           ];
           // Deduplicate list by provider and ID to avoid React key warnings
           const uniqueMap = new Map<string, LiveModelItem>();
@@ -1134,6 +1136,8 @@ const UniversalModelDropdown: React.FC<{
             : [];
           setModels([
             ...defaultLora,
+            { id: 'deepseek-v4-pro-0813', name: 'DeepSeek V4 Pro 0813 (1.6T MoE)', provider: 'alibaba', description: 'Alibaba Singapur: 1.6T MoE (49B activos) • $0.66/1M • Auditor & Diálogos', isVision: false, hasReasoning: true, badge: 'V4 Pro 0813' },
+            { id: 'deepseek-v4.1-flash-1017', name: 'DeepSeek V4.1 Flash (1017)', provider: 'alibaba', description: 'Alibaba Singapur: 552B MoE (~8B activos) • Multimodal • $0.15/1M', isVision: true, hasReasoning: true, badge: 'V4.1 Flash' },
             { id: 'qwen3.8-max-0902', name: 'Qwen 3.8 Max 0902 (Último)', provider: 'alibaba', description: 'Alibaba Singapur: Flagship 0902 con Thinking CoT', isVision: false, hasReasoning: true, badge: '0902 SOTA' },
             { id: 'qwen3.8-2.4-a95b', name: 'Qwen 3.8 2.4-A95B (MoE)', provider: 'alibaba', description: 'Alibaba Singapur: Arquitectura MoE A95B + Thinking CoT', isVision: false, hasReasoning: true, badge: 'A95B MoE' },
             { id: 'kimi-k3', name: 'Kimi K3 (1M Cuota Gratis)', provider: 'alibaba', description: 'Alibaba Singapur: Visión & CoT', isVision: true, hasReasoning: true, badge: 'K3 Gratis' },
@@ -1302,7 +1306,7 @@ const UniversalModelDropdown: React.FC<{
                 </span>
               </div>
               <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-sans mt-0.5 leading-snug">
-                Detecta tu mensaje y alterna automáticamente entre <strong className="text-zinc-700 dark:text-zinc-200">Qwen 3.8 Max 0902</strong>, <strong className="text-zinc-700 dark:text-zinc-200">Qwen 3.8 2.4-A95B</strong>, <strong className="text-zinc-700 dark:text-zinc-200">Kimi K3</strong>, <strong className="text-zinc-700 dark:text-zinc-200">Qwen 3.8 Plus</strong>, <strong className="text-zinc-700 dark:text-zinc-200">Qwen 3.8 Flash</strong> y <strong className="text-zinc-700 dark:text-zinc-200">Qwen 3.7 Plus</strong>.
+                Detecta tu mensaje y alterna automáticamente entre <strong className="text-zinc-700 dark:text-zinc-200">Qwen 3.8 Max 0902</strong>, <strong className="text-zinc-700 dark:text-zinc-200">DeepSeek V4 Pro 0813</strong> (Auditoría/Diálogos), <strong className="text-zinc-700 dark:text-zinc-200">Kimi K3</strong>, <strong className="text-zinc-700 dark:text-zinc-200">Qwen 3.8 2.4-A95B</strong>, <strong className="text-zinc-700 dark:text-zinc-200">DeepSeek V4.1 Flash</strong> (Co-agente ágil), <strong className="text-zinc-700 dark:text-zinc-200">Qwen 3.8 Flash</strong> y <strong className="text-zinc-700 dark:text-zinc-200">Qwen 3.7 Plus</strong>.
               </div>
             </div>
             {settings?.autoModelRouting && <Check size={14} className="text-amber-500 shrink-0 mt-1" />}

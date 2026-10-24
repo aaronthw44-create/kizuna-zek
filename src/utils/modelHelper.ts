@@ -11,6 +11,10 @@ export function isVisionModel(modelId: string = ''): boolean {
   if (lower.includes('qwen') && !lower.includes('vl') && !lower.includes('vision') && !lower.includes('qvq') && !lower.includes('omni')) {
     return false;
   }
+  // DeepSeek V4.1 Flash is multimodal (vision + text)
+  if (lower.includes('deepseek') && (lower.includes('flash') || lower.includes('v4.1') || lower.includes('4.1'))) {
+    return true;
+  }
   const visionKeywords = [
     'vision',
     'vl',

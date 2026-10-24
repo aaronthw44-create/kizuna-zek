@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { PhoneOff, Mic, MicOff, Volume2, VolumeX, Sparkles, Radio, ChevronDown, Check } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Volume2, VolumeX, Sparkles, Radio, ChevronDown, Check, MessageSquare, X } from 'lucide-react';
 
 interface VoiceCallModalProps {
   isOpen: boolean;
@@ -49,6 +49,10 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   const [totalCallTokens, setTotalCallTokens] = useState<number>(0);
   const [totalCallCostUsd, setTotalCallCostUsd] = useState<number>(0);
   const [turnsCount, setTurnsCount] = useState<number>(0);
+  const [isTranscriptLogOpen, setIsTranscriptLogOpen] = useState<boolean>(false);
+  const [callHistoryLog, setCallHistoryLog] = useState<
+    Array<{ id: string; role: 'user' | 'assistant'; text: string; time: string }>
+  >([]);
 
   const recognitionRef = useRef<any>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
@@ -385,6 +389,17 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       const voicePrompt = `[MODO LLAMADA DE VOZ EN VIVO CON EL AUTOR: Responde ${personaHint} como en una charla hablada natural y directa (máximo 2 o 3 oraciones fluidas), sin listas ni formato markdown ni emojis, para que suene orgánico al ser narrado en voz alta]: ${spokenText}`;
 
       const turnStartPerf = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const nowTimeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      setCallHistoryLog((prev) => [
+        ...prev,
+        {
+          id: `usr-${Date.now()}`,
+          role: 'user',
+          text: spokenText,
+          time: nowTimeLabel,
+        },
+      ]);
 
       onSendVoiceTurnRef.current(
         voicePrompt,
@@ -411,6 +426,19 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
           setTotalCallTokens((prev) => prev + turnTokens);
           setTotalCallCostUsd((prev) => prev + totalTurnCost);
           setTurnsCount((prev) => prev + 1);
+
+          const cleanReplyForLog = cleanTextForSpeech(replyText);
+          if (cleanReplyForLog) {
+            setCallHistoryLog((prev) => [
+              ...prev,
+              {
+                id: `ast-${Date.now()}`,
+                role: 'assistant',
+                text: cleanReplyForLog,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              },
+            ]);
+          }
 
           speakReply(replyText);
         },
@@ -445,6 +473,8 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       setTotalCallTokens(0);
       setTotalCallCostUsd(0);
       setTurnsCount(0);
+      setCallHistoryLog([]);
+      setIsTranscriptLogOpen(false);
       setUserTranscript('');
       setAssistantSubtitle('Escuchando... Hablá cuando quieras (o tocá el círculo para interrumpir).');
       const timer = setTimeout(() => {
@@ -811,10 +841,62 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Live Call Chat Transcript Drawer (View conversation without hanging up) */}
+        {isTranscriptLogOpen && (
+          <div className="mt-3 w-full max-w-md rounded-2xl bg-[#111117]/95 border border-white/15 p-3.5 shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <MessageSquare size={14} className="text-indigo-400" />
+                <span className="text-xs font-semibold text-zinc-100">
+                  Chat de la Llamada ({callHistoryLog.length})
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  Guardado en tu chat
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTranscriptLogOpen(false)}
+                className="min-w-[36px] min-h-[36px] rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-white/5 transition-colors cursor-pointer"
+                title="Cerrar historial de llamada"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
+              {callHistoryLog.length === 0 ? (
+                <p className="text-xs text-zinc-500 text-center py-4">
+                  Todavía no hay mensajes en esta llamada. Todo lo que hables quedará guardado aquí y en tu conversación principal.
+                </p>
+              ) : (
+                callHistoryLog.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className={`rounded-xl px-3 py-2 text-xs leading-relaxed ${
+                      entry.role === 'user'
+                        ? 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-100 ml-6'
+                        : 'bg-white/[0.04] border border-white/10 text-zinc-200 mr-6'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-[10px] text-zinc-400 mb-0.5">
+                      <span className="font-semibold">
+                        {entry.role === 'user' ? 'Vos (Voz)' : `Kizuna (${voicePreset})`}
+                      </span>
+                      <span>{entry.time}</span>
+                    </div>
+                    <p>{entry.text}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom Call Controls (44x44px minimum touch targets) */}
-      <div className="w-full max-w-xs flex items-center justify-around pb-2">
+      <div className="w-full max-w-sm flex items-center justify-around pb-2">
         <button
           type="button"
           onClick={handleToggleMute}
@@ -826,6 +908,24 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
           title={isMuted ? 'Activar micrófono' : 'Silenciar micrófono'}
         >
           {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setIsTranscriptLogOpen((prev) => !prev)}
+          className={`relative w-14 h-14 min-w-[56px] min-h-[56px] rounded-full flex items-center justify-center border transition-all cursor-pointer active:scale-95 ${
+            isTranscriptLogOpen
+              ? 'bg-indigo-500/25 border-indigo-400/50 text-indigo-300'
+              : 'bg-[#181820] border-white/15 text-zinc-200 hover:bg-[#22222c]'
+          }`}
+          title="Ver historial escrito de la llamada"
+        >
+          <MessageSquare size={21} />
+          {callHistoryLog.length > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-indigo-500 text-white text-[10px] font-bold flex items-center justify-center shadow">
+              {callHistoryLog.length}
+            </span>
+          )}
         </button>
 
         <button

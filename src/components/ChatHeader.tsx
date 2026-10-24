@@ -1077,15 +1077,15 @@ const UniversalModelDropdown: React.FC<{
         }
       } catch {
         // Fallback core models
-        ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.8-live', 'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite'].forEach((id) => {
+        ['gemini-3.8-flash', 'gemini-3.8-live', 'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite'].forEach((id) => {
           list.push({
             id,
-            name: id === 'gemini-4-argon' ? 'Gemini 4 Argon' : id === 'gemini-3.8-live' ? 'Gemini 3.8 Live' : id,
+            name: id === 'gemini-3.8-live' ? 'Gemini 3.8 Live' : id,
             provider: 'gemini',
             description: 'Google Generative AI Engine',
             isVision: true,
             hasReasoning: true,
-            badge: id === 'gemini-4-argon' ? 'Argon 4' : id.includes('3.8') ? 'SOTA Flash' : undefined,
+            badge: id.includes('3.8') ? 'SOTA Flash' : undefined,
           });
         });
       }
@@ -1217,7 +1217,7 @@ const UniversalModelDropdown: React.FC<{
           const loraModelId = settings?.alibabaCustomLoraModel?.trim();
           const topPriority = [
             ...(loraModelId ? [loraModelId] : []),
-            'deepseek-v4-pro-0813', 'deepseek-v4.1-flash-1017', 'qwen3.8-max-0902', 'qwen3.8-2.4-a95b', 'kimi-k3', 'qwen3.8-plus', 'qwen3.8-flash', 'qwen3.7-plus', 'qwen3.8-omni-flash', 'gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.8-live', 'qwen3.8-max', 'qwen-plus', 'moonshotai/kimi-k3', 'gemini-3.1-pro-preview'
+            'deepseek-v4-pro-0813', 'deepseek-v4.1-flash-1017', 'qwen3.8-max-0902', 'qwen3.8-2.4-a95b', 'kimi-k3', 'qwen3.8-plus', 'qwen3.8-flash', 'qwen3.7-plus', 'qwen3.8-omni-flash', 'gemini-3.8-flash', 'gemini-3.8-live', 'qwen3.8-max', 'qwen-plus', 'moonshotai/kimi-k3', 'gemini-3.1-pro-preview'
           ];
           // Deduplicate list by provider and ID to avoid React key warnings
           const uniqueMap = new Map<string, LiveModelItem>();
@@ -1265,7 +1265,7 @@ const UniversalModelDropdown: React.FC<{
             { id: 'qwen3.8-plus', name: 'Qwen 3.8 Plus (1M)', provider: 'alibaba', description: 'Alibaba Cloud MaaS: 1M Contexto & Visión', isVision: true, hasReasoning: true, badge: '3.8 Plus' },
             { id: 'qwen3.8-flash', name: 'Qwen 3.8 Flash', provider: 'alibaba', description: 'Alibaba Cloud MaaS: Visión & CoT', isVision: true, hasReasoning: true, badge: 'Flash' },
             { id: 'qwen3.7-plus', name: 'Qwen 3.7 Plus', provider: 'alibaba', description: 'Alibaba Cloud MaaS: Balanceado', isVision: true, hasReasoning: true, badge: '3.7 Plus' },
-            { id: 'gemini-4-argon', name: 'Gemini 4 Argon', provider: 'gemini', description: 'Google AI Studio: SOTA Model', isVision: true, hasReasoning: true, badge: 'Argon 4' },
+            { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', provider: 'gemini', description: 'Google Generative AI', isVision: true, hasReasoning: true, badge: 'Flash 3.8' },
             { id: 'qwen3.8-max', name: 'Qwen 3.8 Max', provider: 'alibaba', description: 'Alibaba Cloud MaaS: Visión & CoT', isVision: true, hasReasoning: true, badge: 'Max' },
             { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', provider: 'gemini', description: 'Google Generative AI', isVision: true, hasReasoning: true, badge: 'Flash 3.8' },
             { id: 'gemini-3.8-live', name: 'Gemini 3.8 Live', provider: 'gemini', description: 'Google Generative AI (Llamada)', isVision: true, hasReasoning: true, badge: 'Live' },

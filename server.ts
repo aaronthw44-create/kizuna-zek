@@ -321,7 +321,7 @@ app.get('/api/search', async (req, res) => {
 
     const candidateModels = [
       'gemini-3.8-flash',
-      'gemini-4-argon',
+      'gemini-3.8-live',
       'gemini-3.1-flash-lite',
       'gemini-flash-latest',
     ];
@@ -432,8 +432,7 @@ app.get('/api/gemini/models', async (req, res) => {
   const apiKey = queryKey || process.env.GEMINI_API_KEY || DEFAULT_GEMINI_API_KEY;
 
   const defaultCoreModels = [
-    { id: 'gemini-4-argon', displayName: 'Gemini 4 Argon', description: 'Modelo SOTA de Google para razonamiento profundo, lore y creatividad' },
-    { id: 'gemini-3.8-flash', displayName: 'Gemini 3.8 Flash', description: 'Ultra-rápido para chat continuo y alta cadencia' },
+    { id: 'gemini-3.8-flash', displayName: 'Gemini 3.8 Flash', description: 'Modelo SOTA de Google para razonamiento profundo, lore y creatividad' },
     { id: 'gemini-3.8-live', displayName: 'Gemini 3.8 Live', description: 'Motor multimodal en vivo para llamadas de voz y baja latencia' },
     { id: 'gemini-3.1-pro-preview', displayName: 'Gemini 3.1 Pro Preview', description: 'Alta capacidad analítica para lógica compleja y manuscritos' },
     { id: 'gemini-3.1-flash-lite', displayName: 'Gemini 3.1 Flash Lite', description: 'Ultra liviano y máxima velocidad' },
@@ -469,7 +468,7 @@ app.get('/api/gemini/models', async (req, res) => {
       }
     }
 
-    // Merge default curated list to ensure gemini-4-argon and full core suite are always available
+    // Merge default curated list to ensure full core suite is always available
     for (const core of defaultCoreModels) {
       if (!fetchedMap.has(core.id)) {
         fetchedMap.set(core.id, {
@@ -483,7 +482,6 @@ app.get('/api/gemini/models', async (req, res) => {
 
     const allModels = Array.from(fetchedMap.values());
     const priorityOrder = [
-      'gemini-4-argon',
       'gemini-3.8-flash',
       'gemini-3.8-live',
       'gemini-3.1-pro-preview',
@@ -2667,7 +2665,7 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
 
       if (!apiKey) {
         sendChunk({
-          error: 'Para interactuar con Google Gemini (incluyendo gemini-4-argon), ingresa tu API Key de Google AI Studio (AIzaSy... o AQ.Ab...) en Ajustes ⚙️ o cambia el motor a Alibaba Cloud / NVIDIA NIM.',
+          error: 'Para interactuar con Google Gemini (incluyendo gemini-3.8-flash), ingresa tu API Key de Google AI Studio (AIzaSy... o AQ.Ab...) en Ajustes ⚙️ o cambia el motor a Alibaba Cloud / NVIDIA NIM.',
         });
         sendChunk({ done: true });
         res.end();
@@ -2765,9 +2763,8 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
 
       let targetGeminiModel = (model || 'gemini-3.8-flash').replace(/^models\//, '');
       const supportedGeminiModels = [
-        'gemini-4-argon',
         'gemini-3.8-flash',
-        'gemini-3.6-flash',
+        'gemini-3.8-live',
         'gemini-3.1-pro-preview',
         'gemini-3.1-flash-lite',
         'gemini-flash-latest',
@@ -2791,11 +2788,11 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
         ? `${geminiIdentity}\n\n${fullSystemInstruction}`
         : geminiIdentity;
 
-      // Model candidate list: Exclusively Gemini 3 and Gemini 4 series (Gemini 2.x series is retired)
+      // Model candidate list: Exclusively Gemini 3 series
       const candidateModels = [
         targetGeminiModel,
         'gemini-3.8-flash',
-        'gemini-3.6-flash',
+        'gemini-3.8-live',
         'gemini-3.1-pro-preview',
         'gemini-3.1-flash-lite',
         'gemini-flash-latest',
@@ -2845,8 +2842,7 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
           let candidateConfig: any = { ...geminiConfig };
           try {
             activeModel = candidate;
-            // gemini-4-argon does not accept thinkingBudget (uses automatic thinkingLevel)
-            if (geminiThinkingBudget === 0 || candidate === 'gemini-4-argon') {
+            if (geminiThinkingBudget === 0) {
               delete candidateConfig.thinkingConfig;
             }
             streamResponse = await ai.models.generateContentStream({

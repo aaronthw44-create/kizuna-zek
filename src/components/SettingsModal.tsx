@@ -162,7 +162,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   } | null>(null);
 
   const DEFAULT_GEMINI_MODELS = [
-    'gemini-4-argon',
     'gemini-3.8-flash',
     'gemini-3.8-live',
     'gemini-3.1-pro-preview',

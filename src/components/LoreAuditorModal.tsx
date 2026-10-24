@@ -66,9 +66,8 @@ const AUDITOR_MODEL_GROUPS: AuditorModelGroup[] = [
     title: 'Google AI Studio (Gemini)',
     icon: '✨',
     models: [
-      { id: 'gemini-4-argon', provider: 'gemini', name: 'Gemini 4 Argon', badge: 'SOTA Razonamiento', icon: '⚡' },
-      { id: 'gemini-3.6-flash', provider: 'gemini', name: 'Gemini 3.6 Flash', badge: '1M Contexto + Visión', icon: '⚡' },
       { id: 'gemini-3.8-flash', provider: 'gemini', name: 'Gemini 3.8 Flash', badge: 'Ultra-Rápido', icon: '⚡' },
+      { id: 'gemini-3.8-live', provider: 'gemini', name: 'Gemini 3.8 Live', badge: '1M Contexto + Visión', icon: '⚡' },
       { id: 'gemini-3.1-pro-preview', provider: 'gemini', name: 'Gemini 3.1 Pro', badge: 'Análisis Complejo', icon: '🧠' },
     ],
   },
@@ -119,7 +118,7 @@ export const LoreAuditorModal: React.FC<LoreAuditorModalProps> = ({
     activeProvider || 'gemini'
   );
   const [selectedModel, setSelectedModel] = useState<string>(
-    activeModel || 'gemini-4-argon'
+    activeModel || 'gemini-3.8-flash'
   );
   const [speedMode, setSpeedMode] = useState<'fast' | 'deep'>('fast');
   const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
@@ -130,7 +129,7 @@ export const LoreAuditorModal: React.FC<LoreAuditorModalProps> = ({
   if (!isOpen) return null;
 
   const currentProvider = selectedProvider || activeProvider || 'gemini';
-  const currentModel = selectedModel || activeModel || 'gemini-4-argon';
+  const currentModel = selectedModel || activeModel || 'gemini-3.8-flash';
 
   const activeOption = AUDITOR_MODEL_GROUPS.flatMap((g) => g.models).find(
     (m) => m.provider === currentProvider && m.id === currentModel

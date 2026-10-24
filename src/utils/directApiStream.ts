@@ -772,8 +772,7 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
   const candidateModels = [
     geminiModel,
     'gemini-3.8-flash',
-    'gemini-3.6-flash',
-    'gemini-4-argon',
+    'gemini-3.8-live',
     'gemini-3.1-pro-preview',
     'gemini-3.1-flash-lite',
     'gemini-flash-latest',
@@ -865,7 +864,7 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
             temperature: typeof temperature === 'number' ? temperature : 0.7,
             maxOutputTokens: typeof maxOutputTokens === 'number' ? maxOutputTokens : 4096,
             topP: 0.95,
-            ...(thinkingBudget !== undefined && thinkingBudget > 0 && candModel !== 'gemini-4-argon' ? {
+            ...(thinkingBudget !== undefined && thinkingBudget > 0 ? {
               thinkingConfig: {
                 thinkingBudget: thinkingBudget,
                 includeThoughts: true,

@@ -417,7 +417,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
           title="Voz Eco usa el motor nativo del celular (0 tokens de gasto). Voz Qwen HD usa síntesis neuronal de Alibaba Cloud."
         >
           <Sparkles size={12} />
-          <span>{useAlibabaHdVoice ? 'Voz Qwen HD' : 'Voz Eco (0 Tok)'}</span>
+          <span>{useAlibabaHdVoice ? 'Voz HD Neural (Qwen Audio)' : 'Voz Eco ($0.00 extra)'}</span>
         </button>
       </div>
 

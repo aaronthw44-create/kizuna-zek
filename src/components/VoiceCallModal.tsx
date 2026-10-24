@@ -567,12 +567,14 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
 
   const formatOmniDisplayName = (rawName: string) => {
     const lower = rawName.toLowerCase();
-    if (lower.includes('realtime')) return 'Qwen 3.8 Omni Realtime';
+    if (lower.includes('audio-3.1-realtime')) return 'Qwen-Audio 3.1 Realtime Flash';
+    if (lower.includes('audio-3.0-realtime')) return 'Qwen-Audio 3.0 Realtime Flash';
+    if (lower.includes('realtime')) return 'Qwen 3.8 Omni Flash Realtime';
     if (lower.includes('omni-turbo') || lower.includes('omni-mini')) return 'Qwen 3.8 Omni Mini';
-    if (lower.includes('omni')) return 'Qwen 3.8 Omni Flash';
+    if (lower.includes('omni')) return 'Qwen 3.8 Omni Flash (Híbrido)';
     if (lower.includes('2.5-flash')) return 'Gemini 2.5 Flash Live';
     if (lower.includes('gemini')) return 'Gemini 3.6 Flash Live';
-    return 'Qwen 3.8 Omni Flash';
+    return 'Qwen 3.8 Omni Flash Realtime';
   };
 
   if (!isOpen) return null;
@@ -598,37 +600,43 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                   setIsModelSelectorOpen((v) => !v);
                 }}
                 className="flex items-center gap-1 text-emerald-300 font-semibold hover:underline cursor-pointer active:scale-95 transition-transform"
-                title="Cambiar modelo multimodal Omni en vivo"
+                title="Cambiar modelo multimodal Omni / Realtime en vivo"
               >
-                <span className="truncate max-w-[140px] sm:max-w-[180px]">
+                <span className="truncate max-w-[140px] sm:max-w-[190px]">
                   {formatOmniDisplayName(activeModelName)}
                 </span>
                 <ChevronDown size={12} className="text-emerald-400 shrink-0" />
               </button>
 
-              {/* Omni-Only Model Dropdown Card */}
+              {/* Omni & Realtime Voice Call Model Dropdown Card */}
               {isModelSelectorOpen && (
-                <div className="absolute left-0 top-full mt-2 w-72 bg-[#121218] border border-[#2a2a35] rounded-xl shadow-2xl p-2 z-[160] text-white space-y-1">
+                <div className="absolute left-0 top-full mt-2 w-80 max-w-[calc(100vw-32px)] bg-[#121218] border border-[#2a2a35] rounded-xl shadow-2xl p-2 z-[160] text-white space-y-1">
                   <div className="px-2 py-1 text-[10px] font-mono text-zinc-400 uppercase tracking-wider border-b border-[#22222d] mb-1">
-                    Modelos Omni / Voz en Vivo
+                    Modelos Realtime & Omni (1M Cuota Gratis)
                   </div>
                   {[
                     {
-                      id: 'qwen-3.8-omni-flash',
-                      name: 'Qwen 3.8 Omni Flash',
-                      desc: 'Multimodal voz + texto ($0.07/1M txt)',
+                      id: 'qwen3.8-omni-flash-realtime',
+                      name: 'Qwen 3.8 Omni Flash Realtime',
+                      desc: 'Voz + Texto nativo • 1M Gratis ($0.93 in / $1.87 out)',
                       provider: 'alibaba',
                     },
                     {
-                      id: 'qwen-3.8-omni-flash-realtime',
-                      name: 'Qwen 3.8 Omni Realtime',
-                      desc: 'Respuesta hablada de ultrabaja latencia',
+                      id: 'qwen-audio-3.1-realtime-flash',
+                      name: 'Qwen-Audio 3.1 Realtime Flash',
+                      desc: 'Voz Full-Duplex • 1M Gratis ($0.23 txt / $1.87 voz)',
                       provider: 'alibaba',
                     },
                     {
-                      id: 'qwen-omni-turbo',
-                      name: 'Qwen 3.8 Omni Mini',
-                      desc: 'Ultra ligero y económico para charlas largas',
+                      id: 'qwen-audio-3.0-realtime-flash',
+                      name: 'Qwen-Audio 3.0 Realtime Flash',
+                      desc: 'Voz Full-Duplex • 1M Gratis extra ($0.23 txt / $1.87 voz)',
+                      provider: 'alibaba',
+                    },
+                    {
+                      id: 'qwen3.8-omni-flash',
+                      name: 'Qwen 3.8 Omni Flash (Híbrido)',
+                      desc: 'Solo genera texto ($0.07/1M) + Sintetizador Eco/HD',
                       provider: 'alibaba',
                     },
                     {

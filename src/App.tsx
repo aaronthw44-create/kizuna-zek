@@ -1181,9 +1181,9 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
     if (isVoiceCallTurn) {
       if (effectiveTurnProvider === 'custom' || (effectiveTurnProvider === 'alibaba' && !hasAlibabaKey)) {
         effectiveTurnProvider = hasAlibabaKey ? 'alibaba' : 'gemini';
-        manualModelId = hasAlibabaKey ? 'qwen-3.8-omni-flash' : 'gemini-3.6-flash';
+        manualModelId = hasAlibabaKey ? 'qwen3.8-omni-flash-realtime' : 'gemini-3.6-flash';
       } else if (effectiveTurnProvider === 'alibaba' && !/omni|realtime/i.test(manualModelId)) {
-        manualModelId = 'qwen-3.8-omni-flash';
+        manualModelId = 'qwen3.8-omni-flash-realtime';
       } else if (effectiveTurnProvider === 'gemini' && !/flash/i.test(manualModelId)) {
         manualModelId = 'gemini-3.6-flash';
       }
@@ -1192,7 +1192,9 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
     const effectiveTurnModelId = autoRouteDecision ? autoRouteDecision.modelId : manualModelId;
 
     const formatModelDisplayName = (modelId: string): string => {
-      if (modelId.includes('realtime')) return 'Qwen 3.8 Omni Realtime';
+      if (modelId.includes('audio-3.1-realtime')) return 'Qwen-Audio 3.1 Realtime Flash';
+      if (modelId.includes('audio-3.0-realtime')) return 'Qwen-Audio 3.0 Realtime Flash';
+      if (modelId.includes('realtime')) return 'Qwen 3.8 Omni Flash Realtime';
       if (modelId.includes('omni-turbo') || modelId.includes('omni-mini')) return 'Qwen 3.8 Omni Mini';
       if (modelId.includes('qwen3.8-max-0902') || modelId.includes('0902')) return 'Qwen 3.8 Max 0902';
       if (modelId.includes('qwen3.7-plus') || modelId.includes('3.7-plus')) return 'Qwen 3.7 Plus';
@@ -3457,11 +3459,11 @@ Ofrece un diagnóstico estructurado y recomendaciones de mejora de diseño.`;
           activeModelName={
             settings.provider === 'alibaba'
               ? (/omni|realtime/i.test(settings.alibabaModel || '')
-                  ? (settings.alibabaModel || 'qwen-3.8-omni-flash')
-                  : 'qwen-3.8-omni-flash')
+                  ? (settings.alibabaModel || 'qwen3.8-omni-flash-realtime')
+                  : 'qwen3.8-omni-flash-realtime')
               : settings.provider === 'custom'
                 ? ((settings.alibabaApiKey || localStorage.getItem('kizuna_alibaba_api_key'))
-                    ? 'qwen-3.8-omni-flash'
+                    ? 'qwen3.8-omni-flash-realtime'
                     : 'gemini-3.6-flash')
                 : (/flash/i.test(settings.geminiModel || '')
                     ? (settings.geminiModel || 'gemini-3.6-flash')

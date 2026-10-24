@@ -1633,7 +1633,9 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
         if (
           targetModel === 'qwen-3.8-omni-flash' ||
           targetModel === 'qwen-3.8-omni-flash-realtime' ||
-          targetModel === 'qwen3.8-omni-flash-realtime'
+          targetModel === 'qwen3.8-omni-flash-realtime' ||
+          targetModel === 'qwen-audio-3.1-realtime-flash' ||
+          targetModel === 'qwen-audio-3.0-realtime-flash'
         ) {
           targetModel = 'qwen3.8-omni-flash';
         }

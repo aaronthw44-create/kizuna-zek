@@ -1162,20 +1162,35 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
           )
         : null;
 
-    const effectiveTurnProvider: 'gemini' | 'custom' | 'alibaba' = autoRouteDecision
+    const hasAlibabaKey = Boolean((settings.alibabaApiKey || localStorage.getItem('kizuna_alibaba_api_key') || '').trim());
+    let effectiveTurnProvider: 'gemini' | 'custom' | 'alibaba' = autoRouteDecision
       ? autoRouteDecision.provider
       : settings.provider;
 
-    const manualModelId =
+    let manualModelId =
       settings.provider === 'gemini'
         ? settings.geminiModel
         : settings.provider === 'alibaba'
           ? (settings.alibabaModel || 'qwen3.8-max')
           : (settings.customModel || 'moonshotai/kimi-k3');
 
+    // Voice Call Guard: Ensure live voice calls exclusively use Omni / Realtime / Flash Live models (never text-only Kimi K3 or Qwen Max)
+    if (isVoiceCallTurn) {
+      if (effectiveTurnProvider === 'custom') {
+        effectiveTurnProvider = hasAlibabaKey ? 'alibaba' : 'gemini';
+        manualModelId = hasAlibabaKey ? 'qwen-3.8-omni-flash' : 'gemini-3.6-flash';
+      } else if (effectiveTurnProvider === 'alibaba' && !/omni|realtime/i.test(manualModelId)) {
+        manualModelId = 'qwen-3.8-omni-flash';
+      } else if (effectiveTurnProvider === 'gemini' && !/flash/i.test(manualModelId)) {
+        manualModelId = 'gemini-3.6-flash';
+      }
+    }
+
     const effectiveTurnModelId = autoRouteDecision ? autoRouteDecision.modelId : manualModelId;
 
     const formatModelDisplayName = (modelId: string): string => {
+      if (modelId.includes('realtime')) return 'Qwen 3.8 Omni Realtime';
+      if (modelId.includes('omni-turbo') || modelId.includes('omni-mini')) return 'Qwen 3.8 Omni Mini';
       if (modelId.includes('qwen3.8-max-0902') || modelId.includes('0902')) return 'Qwen 3.8 Max 0902';
       if (modelId.includes('qwen3.7-plus') || modelId.includes('3.7-plus')) return 'Qwen 3.7 Plus';
       if (modelId.includes('qwen3.8-omni-flash') || modelId.includes('qwen-3.8-omni-flash') || modelId.includes('omni')) return 'Qwen 3.8 Omni Flash';
@@ -3432,12 +3447,22 @@ Ofrece un diagnóstico estructurado y recomendaciones de mejora de diseño.`;
           }}
           activeModelName={
             settings.provider === 'alibaba'
-              ? (settings.alibabaModel || 'qwen3.8-omni-flash')
+              ? (/omni|realtime/i.test(settings.alibabaModel || '')
+                  ? (settings.alibabaModel || 'qwen-3.8-omni-flash')
+                  : 'qwen-3.8-omni-flash')
               : settings.provider === 'custom'
-                ? (settings.customModel || 'moonshotai/kimi-k3')
-                : (settings.geminiModel || 'gemini-3.6-flash')
+                ? ((settings.alibabaApiKey || localStorage.getItem('kizuna_alibaba_api_key'))
+                    ? 'qwen-3.8-omni-flash'
+                    : 'gemini-3.6-flash')
+                : (/flash/i.test(settings.geminiModel || '')
+                    ? (settings.geminiModel || 'gemini-3.6-flash')
+                    : 'gemini-3.6-flash')
           }
-          activeProvider={settings.provider}
+          activeProvider={
+            settings.provider === 'custom'
+              ? ((settings.alibabaApiKey || localStorage.getItem('kizuna_alibaba_api_key')) ? 'alibaba' : 'gemini')
+              : settings.provider
+          }
           alibabaApiKey={settings.alibabaApiKey}
           onSelectQuickModel={(provider, model) => handleUpdateProvider(provider, model)}
           onStopGeneration={handleStopGeneration}

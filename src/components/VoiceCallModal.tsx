@@ -43,12 +43,25 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   // Default to Voz Eco (0 tokens / $0.00 quota) so calls never drain TTS quota unless user toggles HD
   const [useAlibabaHdVoice, setUseAlibabaHdVoice] = useState(false);
 
+  // Live Call Telemetry State (Tokens, Response Time, Estimated Cost)
+  const [lastLatencyMs, setLastLatencyMs] = useState<number | null>(null);
+  const [lastTurnTokens, setLastTurnTokens] = useState<number>(0);
+  const [totalCallTokens, setTotalCallTokens] = useState<number>(0);
+  const [totalCallCostUsd, setTotalCallCostUsd] = useState<number>(0);
+  const [turnsCount, setTurnsCount] = useState<number>(0);
+
   const recognitionRef = useRef<any>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const isMountedRef = useRef(true);
   const isOpenRef = useRef(isOpen);
   const isMutedRef = useRef(isMuted);
   const isSpeakerMutedRef = useRef(isSpeakerMuted);
+  const useAlibabaHdVoiceRef = useRef(useAlibabaHdVoice);
+  const voicePresetRef = useRef<'Cherry' | 'Serena' | 'Luca' | 'Ethan'>(voicePreset);
+  const alibabaApiKeyRef = useRef(alibabaApiKey);
+  const onSendVoiceTurnRef = useRef(onSendVoiceTurn);
+  const handleProcessSpokenTurnRef = useRef<(spokenText: string) => void>(() => {});
+  const lastSpokenReplyRef = useRef<string>('');
 
   useEffect(() => {
     isOpenRef.current = isOpen;
@@ -61,6 +74,22 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   useEffect(() => {
     isSpeakerMutedRef.current = isSpeakerMuted;
   }, [isSpeakerMuted]);
+
+  useEffect(() => {
+    useAlibabaHdVoiceRef.current = useAlibabaHdVoice;
+  }, [useAlibabaHdVoice]);
+
+  useEffect(() => {
+    voicePresetRef.current = voicePreset;
+  }, [voicePreset]);
+
+  useEffect(() => {
+    alibabaApiKeyRef.current = alibabaApiKey;
+  }, [alibabaApiKey]);
+
+  useEffect(() => {
+    onSendVoiceTurnRef.current = onSendVoiceTurn;
+  }, [onSendVoiceTurn]);
 
   const stopAllAudioAndSpeech = useCallback(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -136,7 +165,6 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       rec.onerror = (e: any) => {
         if (!isMountedRef.current || !isOpenRef.current) return;
         if (e.error === 'no-speech') {
-          // Quietly restart listening if still in call and not muted
           if (!isMutedRef.current && isOpenRef.current) {
             setTimeout(() => {
               if (isOpenRef.current && !isMutedRef.current) startListening();
@@ -154,9 +182,9 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         if (!isMountedRef.current || !isOpenRef.current) return;
         const cleanSpoken = finalCaptured.trim();
         if (cleanSpoken.length > 1) {
-          handleProcessSpokenTurn(cleanSpoken);
+          // Always invoke via ref so latest voicePreset, HD/Eco mode, and model are used
+          handleProcessSpokenTurnRef.current(cleanSpoken);
         } else if (!isMutedRef.current && isOpenRef.current) {
-          // Continue listening seamlessly
           setTimeout(() => {
             if (isOpenRef.current && !isMutedRef.current) startListening();
           }, 300);
@@ -170,11 +198,80 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     }
   }, [stopAllAudioAndSpeech, stopRecognition]);
 
+  const speakWithBrowserTTS = useCallback(
+    (cleanText: string) => {
+      if (typeof window === 'undefined' || !window.speechSynthesis) {
+        setCallStatus('idle');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const voices = window.speechSynthesis.getVoices();
+      const activePreset = voicePresetRef.current;
+
+      const isMasculine = activePreset === 'Luca' || activePreset === 'Ethan';
+      const spanishVoices = voices.filter((v) => v.lang.toLowerCase().startsWith('es'));
+
+      let targetVoice =
+        spanishVoices.find((v) =>
+          isMasculine
+            ? /male|hombre|jorge|pablo|diego|raul|carlos|enrique|alvaro|alonso|nestor/i.test(v.name)
+            : /female|mujer|sabina|monica|helena|laura|paulina|elvira|paloma/i.test(v.name)
+        ) || null;
+
+      // If browser doesn't label gender by name, pick distinct voice indices when multiple Spanish voices exist
+      if (!targetVoice && spanishVoices.length > 1) {
+        if (activePreset === 'Cherry') targetVoice = spanishVoices[0];
+        else if (activePreset === 'Serena') targetVoice = spanishVoices[Math.min(1, spanishVoices.length - 1)];
+        else if (activePreset === 'Luca') targetVoice = spanishVoices[spanishVoices.length - 1];
+        else if (activePreset === 'Ethan') targetVoice = spanishVoices[Math.max(0, spanishVoices.length - 2)];
+      } else if (!targetVoice && spanishVoices.length === 1) {
+        targetVoice = spanishVoices[0];
+      }
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      if (targetVoice) utterance.voice = targetVoice;
+      utterance.lang = targetVoice?.lang || 'es-ES';
+
+      // Distinct rate & pitch profiles so each personality is clearly distinguishable even in Eco Mode
+      if (activePreset === 'Cherry') {
+        utterance.rate = 1.12;
+        utterance.pitch = 1.22; // Energetic warm female
+      } else if (activePreset === 'Serena') {
+        utterance.rate = 0.94;
+        utterance.pitch = 0.92; // Calm serene female
+      } else if (activePreset === 'Luca') {
+        utterance.rate = 0.91;
+        utterance.pitch = 0.68; // Deep serious male narrator
+      } else if (activePreset === 'Ethan') {
+        utterance.rate = 1.06;
+        utterance.pitch = 0.82; // Young dynamic male
+      }
+
+      utterance.onend = () => {
+        if (isMountedRef.current && isOpenRef.current && !isMutedRef.current) {
+          startListening();
+        } else {
+          setCallStatus('idle');
+        }
+      };
+
+      utterance.onerror = () => {
+        if (isMountedRef.current && isOpenRef.current && !isMutedRef.current) {
+          startListening();
+        } else {
+          setCallStatus('idle');
+        }
+      };
+
+      window.speechSynthesis.speak(utterance);
+    },
+    [startListening]
+  );
+
   const speakReply = useCallback(
     async (rawReply: string) => {
       if (!isMountedRef.current || !isOpenRef.current) return;
 
-      // Strip markdown, follow-up tags, and thoughts for natural spoken cadence
       const cleanText = rawReply
         .replace(/<<<FOLLOW_UP>>>[\s\S]*$/i, '')
         .replace(/<<<SAVE_MEMORY:[\s\S]*?>>>/gi, '')
@@ -188,6 +285,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         return;
       }
 
+      lastSpokenReplyRef.current = cleanText;
       setAssistantSubtitle(cleanText);
 
       if (isSpeakerMutedRef.current) {
@@ -198,16 +296,19 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         return;
       }
 
+      stopAllAudioAndSpeech();
       setCallStatus('speaking');
 
-      // 1. Try Alibaba Cloud Qwen-Audio-3.1-TTS-Plus / CosyVoice HD synthesis if key is available
+      const isHdActive = useAlibabaHdVoiceRef.current;
+      const currentVoice = voicePresetRef.current;
       const effectiveAliKey = (
-        alibabaApiKey ||
+        alibabaApiKeyRef.current ||
         localStorage.getItem('kizuna_alibaba_api_key') ||
         ''
       ).trim();
 
-      if (useAlibabaHdVoice && effectiveAliKey && cleanText.length <= 600) {
+      // 1. Neural HD Synthesis (Alibaba Qwen-Audio TTS + Neural HD Backup)
+      if (isHdActive && cleanText.length <= 900) {
         try {
           const ttsRes = await fetch('/api/alibaba/tts', {
             method: 'POST',
@@ -215,7 +316,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
             body: JSON.stringify({
               text: cleanText,
               alibabaApiKey: effectiveAliKey,
-              voice: voicePreset,
+              voice: currentVoice,
             }),
           });
           if (ttsRes.ok) {
@@ -243,69 +344,10 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         }
       }
 
-      // 2. Instant Low-Battery Native Web Speech API
+      // 2. Instant Low-Battery Native Web Speech API (Voz Eco $0.00)
       speakWithBrowserTTS(cleanText);
     },
-    [alibabaApiKey, useAlibabaHdVoice, voicePreset, startListening]
-  );
-
-  const speakWithBrowserTTS = useCallback(
-    (cleanText: string) => {
-      if (typeof window === 'undefined' || !window.speechSynthesis) {
-        setCallStatus('idle');
-        return;
-      }
-      window.speechSynthesis.cancel();
-      const voices = window.speechSynthesis.getVoices();
-
-      const isMasculine = voicePreset === 'Luca' || voicePreset === 'Ethan';
-      const targetVoice =
-        voices.find(
-          (v) =>
-            v.lang.startsWith('es') &&
-            (isMasculine
-              ? /male|jorge|pablo|diego|raul|carlos|enrique/i.test(v.name)
-              : /female|sabina|monica|helena|laura|google/i.test(v.name))
-        ) ||
-        voices.find(
-          (v) =>
-            v.lang.startsWith('es') &&
-            (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Premium'))
-        ) ||
-        voices.find((v) => v.lang.startsWith('es')) ||
-        null;
-
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      if (targetVoice) utterance.voice = targetVoice;
-      utterance.lang = 'es-ES';
-      utterance.rate = 1.03;
-
-      // Pitch adjustment based on selected voice personality
-      if (voicePreset === 'Cherry') utterance.pitch = 1.08; // Energetic female
-      else if (voicePreset === 'Serena') utterance.pitch = 0.94; // Calm female
-      else if (voicePreset === 'Luca') utterance.pitch = 0.82; // Serious male
-      else if (voicePreset === 'Ethan') utterance.pitch = 0.90; // Dynamic male
-      else utterance.pitch = 0.98;
-
-      utterance.onend = () => {
-        if (isMountedRef.current && isOpenRef.current && !isMutedRef.current) {
-          startListening();
-        } else {
-          setCallStatus('idle');
-        }
-      };
-
-      utterance.onerror = () => {
-        if (isMountedRef.current && isOpenRef.current && !isMutedRef.current) {
-          startListening();
-        } else {
-          setCallStatus('idle');
-        }
-      };
-
-      window.speechSynthesis.speak(utterance);
-    },
-    [voicePreset, startListening]
+    [speakWithBrowserTTS, startListening, stopAllAudioAndSpeech]
   );
 
   const handleProcessSpokenTurn = useCallback(
@@ -314,12 +356,46 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       setCallStatus('thinking');
       setAssistantSubtitle('Pensando respuesta...');
 
-      const voicePrompt = `[MODO LLAMADA DE VOZ EN VIVO CON EL AUTOR: Responde como en una charla hablada natural, cálida y directa (máximo 2 o 3 oraciones fluidas), sin listas ni formato markdown pesado, para que suene orgánico al ser narrado en voz alta]: ${spokenText}`;
+      const currentVoice = voicePresetRef.current;
+      const personaHint =
+        currentVoice === 'Luca'
+          ? 'con tono masculino serio, reflexivo y estilo narrador'
+          : currentVoice === 'Ethan'
+            ? 'con tono masculino joven, ágil y dinámico'
+            : currentVoice === 'Serena'
+              ? 'con tono femenino sereno, pausado y cálido'
+              : 'con tono femenino enérgico, entusiasta y cercano';
 
-      onSendVoiceTurn(
+      const voicePrompt = `[MODO LLAMADA DE VOZ EN VIVO CON EL AUTOR: Responde ${personaHint} como en una charla hablada natural y directa (máximo 2 o 3 oraciones fluidas), sin listas ni formato markdown ni emojis, para que suene orgánico al ser narrado en voz alta]: ${spokenText}`;
+
+      const turnStartPerf = typeof performance !== 'undefined' ? performance.now() : Date.now();
+
+      onSendVoiceTurnRef.current(
         voicePrompt,
         (replyText) => {
           if (!isMountedRef.current || !isOpenRef.current) return;
+          const elapsedMs = Math.max(
+            120,
+            Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - turnStartPerf)
+          );
+          const inputTokensEst = Math.max(8, Math.ceil(spokenText.length / 3.8));
+          const outputTokensEst = Math.max(12, Math.ceil(replyText.length / 3.8));
+          const turnTokens = inputTokensEst + outputTokensEst;
+
+          // Calculate real-time turn cost:
+          // Text turn on Omni Flash / Gemini Flash: ~$0.07 per 1M input + $0.28 per 1M output
+          const textCost = (inputTokensEst * 0.07 + outputTokensEst * 0.28) / 1_000_000;
+          // Voice synthesis cost: $0.00 in Eco mode; ~$1.87 per 1M audio tokens in HD mode
+          const hdAudioTokensEst = useAlibabaHdVoiceRef.current ? outputTokensEst * 2.2 : 0;
+          const audioCost = (hdAudioTokensEst * 1.87) / 1_000_000;
+          const totalTurnCost = textCost + audioCost;
+
+          setLastLatencyMs(elapsedMs);
+          setLastTurnTokens(turnTokens);
+          setTotalCallTokens((prev) => prev + turnTokens);
+          setTotalCallCostUsd((prev) => prev + totalTurnCost);
+          setTurnsCount((prev) => prev + 1);
+
           speakReply(replyText);
         },
         (errText) => {
@@ -329,14 +405,30 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         }
       );
     },
-    [onSendVoiceTurn, speakReply, stopRecognition]
+    [speakReply, stopRecognition]
   );
+
+  useEffect(() => {
+    handleProcessSpokenTurnRef.current = handleProcessSpokenTurn;
+  }, [handleProcessSpokenTurn]);
+
+  // Preload browser synthesis voices on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+    }
+  }, []);
 
   // Start/stop call lifecycle
   useEffect(() => {
     isMountedRef.current = true;
     if (isOpen) {
       setCallSeconds(0);
+      setLastLatencyMs(null);
+      setLastTurnTokens(0);
+      setTotalCallTokens(0);
+      setTotalCallCostUsd(0);
+      setTurnsCount(0);
       setUserTranscript('');
       setAssistantSubtitle('Escuchando... Hablá cuando quieras (o tocá el círculo para interrumpir).');
       const timer = setTimeout(() => {
@@ -361,15 +453,41 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     };
   }, [isOpen, startListening, stopRecognition, stopAllAudioAndSpeech]);
 
+  const handleSelectVoicePersonality = (newPreset: 'Cherry' | 'Serena' | 'Luca' | 'Ethan', label: string) => {
+    voicePresetRef.current = newPreset;
+    setVoicePreset(newPreset);
+    setIsVoicePickerOpen(false);
+
+    if (callStatus === 'speaking' && lastSpokenReplyRef.current) {
+      speakReply(lastSpokenReplyRef.current);
+    } else {
+      setAssistantSubtitle(`Voz activa cambiada a ${label}. Hablá cuando quieras para escucharla.`);
+    }
+  };
+
+  const handleToggleHdVoiceMode = () => {
+    const next = !useAlibabaHdVoiceRef.current;
+    useAlibabaHdVoiceRef.current = next;
+    setUseAlibabaHdVoice(next);
+
+    if (callStatus === 'speaking' && lastSpokenReplyRef.current) {
+      speakReply(lastSpokenReplyRef.current);
+    } else {
+      setAssistantSubtitle(
+        next
+          ? `Modo Voz HD Neural activado (${voicePresetRef.current}). Síntesis neuronal activa.`
+          : `Modo Voz Eco ($0.00) activado (${voicePresetRef.current}). Cero consumo de cuota de audio.`
+      );
+    }
+  };
+
   const handleOrbTap = () => {
     if (callStatus === 'speaking' || callStatus === 'thinking') {
-      // Full-duplex interrupt! Stop speaking/generating and listen immediately
       stopAllAudioAndSpeech();
       onStopGeneration?.();
       setIsMuted(false);
       startListening();
     } else if (callStatus === 'listening') {
-      // Force end current utterance or pause
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
@@ -399,50 +517,88 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
+  const formatOmniDisplayName = (rawName: string) => {
+    const lower = rawName.toLowerCase();
+    if (lower.includes('realtime')) return 'Qwen 3.8 Omni Realtime';
+    if (lower.includes('omni-turbo') || lower.includes('omni-mini')) return 'Qwen 3.8 Omni Mini';
+    if (lower.includes('omni')) return 'Qwen 3.8 Omni Flash';
+    if (lower.includes('2.5-flash')) return 'Gemini 2.5 Flash Live';
+    if (lower.includes('gemini')) return 'Gemini 3.6 Flash Live';
+    return 'Qwen 3.8 Omni Flash';
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[150] flex flex-col items-center justify-between p-6 bg-[#09090b]/95 backdrop-blur-md text-white select-none modal-sheet-fluid">
-      {/* Top Bar: Call Info & Battery-Safe Badge */}
-      <div className="w-full max-w-md flex items-center justify-between pt-2">
-        <div className="flex items-center gap-2.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-          <div>
+    <div className="fixed inset-0 z-[150] flex flex-col items-center justify-between p-5 sm:p-6 bg-[#09090b]/95 backdrop-blur-md text-white select-none modal-sheet-fluid">
+      {/* Top Bar: Call Info & Voice Controls */}
+      <div className="w-full max-w-md flex items-center justify-between pt-1 gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" />
+          <div className="min-w-0">
             <div className="text-xs font-semibold tracking-wide flex items-center gap-1.5">
               <span>Llamada Omni Live</span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-zinc-300">
                 {formatDuration(callSeconds)}
               </span>
             </div>
-            <div className="relative text-[11px] font-mono text-zinc-400 flex items-center gap-1.5 flex-wrap">
+            <div className="relative text-[11px] font-mono text-zinc-400 flex items-center gap-1.5 flex-wrap mt-0.5">
               <button
                 type="button"
-                onClick={() => setIsModelSelectorOpen((v) => !v)}
+                onClick={() => {
+                  setIsVoicePickerOpen(false);
+                  setIsModelSelectorOpen((v) => !v);
+                }}
                 className="flex items-center gap-1 text-emerald-300 font-semibold hover:underline cursor-pointer active:scale-95 transition-transform"
-                title="Toca para cambiar de modelo (Qwen Omni, Qwen Max, Gemini, Kimi)"
+                title="Cambiar modelo multimodal Omni en vivo"
               >
-                <span>{activeModelName}</span>
-                <ChevronDown size={12} className="text-emerald-400" />
+                <span className="truncate max-w-[140px] sm:max-w-[180px]">
+                  {formatOmniDisplayName(activeModelName)}
+                </span>
+                <ChevronDown size={12} className="text-emerald-400 shrink-0" />
               </button>
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
-                🛡️ Ahorro Cuota
-              </span>
 
-              {/* Quick Model Dropdown Card */}
+              {/* Omni-Only Model Dropdown Card */}
               {isModelSelectorOpen && (
-                <div className="absolute left-0 top-full mt-2 w-64 bg-[#121218] border border-[#2a2a35] rounded-xl shadow-2xl p-2 z-[160] text-white space-y-1">
+                <div className="absolute left-0 top-full mt-2 w-72 bg-[#121218] border border-[#2a2a35] rounded-xl shadow-2xl p-2 z-[160] text-white space-y-1">
                   <div className="px-2 py-1 text-[10px] font-mono text-zinc-400 uppercase tracking-wider border-b border-[#22222d] mb-1">
-                    Cambiar Modelo en Vivo
+                    Modelos Omni / Voz en Vivo
                   </div>
                   {[
-                    { id: 'qwen-3.8-omni-flash', name: 'Qwen 3.8 Omni Flash', provider: 'alibaba' },
-                    { id: 'qwen-3.8-omni-flash-realtime', name: 'Qwen 3.8 Realtime Voice', provider: 'alibaba' },
-                    { id: 'qwen3.8-max', name: 'Qwen 3.8 Max (Prose)', provider: 'alibaba' },
-                    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', provider: 'gemini' },
-                    { id: 'gemini-4-argon', name: 'Gemini 4 Argon', provider: 'gemini' },
-                    { id: 'moonshotai/kimi-k3', name: 'Kimi K3 (NVIDIA NIM)', provider: 'custom' },
+                    {
+                      id: 'qwen-3.8-omni-flash',
+                      name: 'Qwen 3.8 Omni Flash',
+                      desc: 'Multimodal voz + texto ($0.07/1M txt)',
+                      provider: 'alibaba',
+                    },
+                    {
+                      id: 'qwen-3.8-omni-flash-realtime',
+                      name: 'Qwen 3.8 Omni Realtime',
+                      desc: 'Respuesta hablada de ultrabaja latencia',
+                      provider: 'alibaba',
+                    },
+                    {
+                      id: 'qwen-omni-turbo',
+                      name: 'Qwen 3.8 Omni Mini',
+                      desc: 'Ultra ligero y económico para charlas largas',
+                      provider: 'alibaba',
+                    },
+                    {
+                      id: 'gemini-3.6-flash',
+                      name: 'Gemini 3.6 Flash Live',
+                      desc: 'Motor multimodal en vivo de Google',
+                      provider: 'gemini',
+                    },
+                    {
+                      id: 'gemini-2.5-flash',
+                      name: 'Gemini 2.5 Flash Live',
+                      desc: 'Baja latencia y alta disponibilidad',
+                      provider: 'gemini',
+                    },
                   ].map((m) => {
-                    const isSelected = activeModelName.toLowerCase().includes(m.id.toLowerCase()) || activeModelName === m.name;
+                    const isSelected =
+                      activeModelName.toLowerCase() === m.id.toLowerCase() ||
+                      formatOmniDisplayName(activeModelName) === m.name;
                     return (
                       <button
                         key={m.id}
@@ -450,15 +606,19 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                         onClick={() => {
                           onSelectQuickModel?.(m.provider as any, m.id);
                           setIsModelSelectorOpen(false);
+                          setAssistantSubtitle(`Motor cambiado a ${m.name}. Listo para escucharte.`);
                         }}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-mono text-left transition-colors cursor-pointer ${
+                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-mono text-left transition-colors cursor-pointer ${
                           isSelected
                             ? 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30'
                             : 'text-zinc-300 hover:bg-[#1f1f2a] hover:text-white'
                         }`}
                       >
-                        <span className="truncate">{m.name}</span>
-                        {isSelected && <Check size={12} className="text-emerald-400 shrink-0 ml-1" />}
+                        <div className="min-w-0 pr-2">
+                          <div className="truncate font-semibold">{m.name}</div>
+                          <div className="text-[10px] text-zinc-400 truncate">{m.desc}</div>
+                        </div>
+                        {isSelected && <Check size={13} className="text-emerald-400 shrink-0" />}
                       </button>
                     );
                   })}
@@ -473,7 +633,10 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
           <div className="relative">
             <button
               type="button"
-              onClick={() => setIsVoicePickerOpen((v) => !v)}
+              onClick={() => {
+                setIsModelSelectorOpen(false);
+                setIsVoicePickerOpen((v) => !v);
+              }}
               className="px-2.5 py-1.5 min-h-[44px] rounded-xl text-[11px] font-mono border border-white/15 bg-white/5 hover:bg-white/10 text-zinc-200 transition-colors cursor-pointer flex items-center gap-1"
               title="Cambiar personalidad de voz (Cherry, Serena, Luca, Ethan)"
             >
@@ -483,14 +646,14 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
             </button>
 
             {isVoicePickerOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-[#121218] border border-[#2a2a35] rounded-xl shadow-2xl p-2 z-[160] text-white space-y-1">
+              <div className="absolute right-0 top-full mt-2 w-60 bg-[#121218] border border-[#2a2a35] rounded-xl shadow-2xl p-2 z-[160] text-white space-y-1">
                 <div className="px-2 py-1 text-[10px] font-mono text-zinc-400 uppercase tracking-wider border-b border-[#22222d] mb-1">
                   Personalidad de Voz
                 </div>
                 {[
                   { id: 'Cherry', label: 'Cherry (Mujer Enérgica)', desc: 'Cálida, dinámica y entusiasta' },
                   { id: 'Serena', label: 'Serena (Mujer Calma)', desc: 'Pausada, reflexiva y suave' },
-                  { id: 'Luca', label: 'Luca (Hombre Serio)', desc: 'Voz masculina estilo narrador' },
+                  { id: 'Luca', label: 'Luca (Hombre Serio)', desc: 'Voz masculina grave estilo narrador' },
                   { id: 'Ethan', label: 'Ethan (Hombre Joven)', desc: 'Voz masculina fluida y moderna' },
                 ].map((vp) => {
                   const isSelected = voicePreset === vp.id;
@@ -498,11 +661,8 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                     <button
                       key={vp.id}
                       type="button"
-                      onClick={() => {
-                        setVoicePreset(vp.id as any);
-                        setIsVoicePickerOpen(false);
-                      }}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                      onClick={() => handleSelectVoicePersonality(vp.id as any, vp.label)}
+                      className={`w-full text-left px-2.5 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                         isSelected
                           ? 'bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30'
                           : 'text-zinc-300 hover:bg-[#1f1f2a] hover:text-white'
@@ -522,26 +682,26 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
 
           <button
             type="button"
-            onClick={() => setUseAlibabaHdVoice((v) => !v)}
+            onClick={handleToggleHdVoiceMode}
             className={`px-2.5 py-1.5 min-h-[44px] rounded-xl text-[11px] font-mono border transition-colors cursor-pointer flex items-center gap-1.5 ${
               useAlibabaHdVoice
                 ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
                 : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
             }`}
-            title="Voz Eco usa el motor nativo del celular (0 tokens de gasto). Voz Qwen HD usa síntesis neuronal de Alibaba Cloud."
+            title="Voz Eco usa el motor nativo del dispositivo ($0.00 gasto de voz). Voz HD usa síntesis neuronal profunda."
           >
             <Sparkles size={12} />
-            <span>{useAlibabaHdVoice ? 'Voz HD (Qwen)' : 'Voz Eco ($0)'}</span>
+            <span>{useAlibabaHdVoice ? 'Voz HD Neural' : 'Voz Eco ($0)'}</span>
           </button>
         </div>
       </div>
 
-      {/* Center Interactive Orb (Battery-Optimized: No 120Hz Canvas, Pure Smooth Transitions) */}
-      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md my-4 text-center">
+      {/* Center Interactive Orb */}
+      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md my-2 text-center">
         <button
           type="button"
           onClick={handleOrbTap}
-          className="relative group flex items-center justify-center w-44 h-44 rounded-full cursor-pointer focus:outline-none active:scale-95 transition-transform duration-300"
+          className="relative group flex items-center justify-center w-40 h-40 sm:w-44 sm:h-44 rounded-full cursor-pointer focus:outline-none active:scale-95 transition-transform duration-300"
           aria-label="Interactuar con voz o interrumpir"
         >
           {/* Outer subtle ring */}
@@ -559,7 +719,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
 
           {/* Inner Core Orb */}
           <div
-            className={`relative z-10 w-32 h-32 rounded-full flex flex-col items-center justify-center border shadow-2xl transition-all duration-300 ${
+            className={`relative z-10 w-28 h-28 sm:w-32 sm:h-32 rounded-full flex flex-col items-center justify-center border shadow-2xl transition-all duration-300 ${
               callStatus === 'listening'
                 ? 'bg-[#12241d] border-emerald-400/40 text-emerald-300'
                 : callStatus === 'speaking'
@@ -569,7 +729,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                     : 'bg-[#14141a] border-white/15 text-zinc-300'
             }`}
           >
-            <Radio size={32} className="mb-1.5 opacity-90" />
+            <Radio size={30} className="mb-1.5 opacity-90" />
             <span className="text-[11px] font-mono uppercase tracking-wider font-semibold">
               {callStatus === 'listening'
                 ? 'Escuchando'
@@ -585,7 +745,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         </button>
 
         {/* Live Transcripts & Subtitles */}
-        <div className="mt-8 w-full space-y-3 px-2 min-h-[110px] flex flex-col justify-center">
+        <div className="mt-6 w-full space-y-2.5 px-2 min-h-[96px] flex flex-col justify-center">
           {userTranscript && (
             <p className="text-xs font-mono text-emerald-400/90 italic line-clamp-2">
               “{userTranscript}”
@@ -595,10 +755,48 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
             {assistantSubtitle}
           </p>
         </div>
+
+        {/* Real-Time Telemetry Bar: Tokens, Response Latency & Cost */}
+        <div className="mt-4 w-full max-w-md rounded-xl bg-[#121218]/90 border border-white/10 px-3 py-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-zinc-300 shadow-inner">
+          <div className="flex items-center gap-1.5" title="Tiempo de respuesta del último turno">
+            <span className="text-zinc-500">Respuesta:</span>
+            <span className="text-emerald-300 font-semibold">
+              {lastLatencyMs !== null ? `${(lastLatencyMs / 1000).toFixed(2)}s` : '—'}
+            </span>
+          </div>
+
+          <div className="h-3 w-[1px] bg-white/10 hidden sm:block" />
+
+          <div className="flex items-center gap-1.5" title="Tokens consumidos en el último turno y acumulados en la llamada">
+            <span className="text-zinc-500">Tokens:</span>
+            <span className="text-zinc-100 font-semibold">
+              {lastTurnTokens > 0 ? `${lastTurnTokens} tok` : '0 tok'}
+            </span>
+            <span className="text-zinc-500 text-[10px]">
+              (Total: {totalCallTokens})
+            </span>
+          </div>
+
+          <div className="h-3 w-[1px] bg-white/10 hidden sm:block" />
+
+          <div className="flex items-center gap-1.5" title="Costo estimado acumulado en esta llamada">
+            <span className="text-zinc-500">Gasto:</span>
+            <span className={useAlibabaHdVoice ? 'text-amber-300 font-semibold' : 'text-emerald-300 font-semibold'}>
+              {turnsCount === 0
+                ? '$0.0000'
+                : totalCallCostUsd < 0.0001
+                  ? '<$0.0001'
+                  : `$${totalCallCostUsd.toFixed(4)}`}
+            </span>
+            <span className="text-[10px] text-zinc-500">
+              ({useAlibabaHdVoice ? 'HD' : 'Voz $0'})
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Bottom Call Controls (44x44px minimum touch targets) */}
-      <div className="w-full max-w-xs flex items-center justify-around pb-4">
+      <div className="w-full max-w-xs flex items-center justify-around pb-2">
         <button
           type="button"
           onClick={handleToggleMute}

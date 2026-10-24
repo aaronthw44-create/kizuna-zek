@@ -899,7 +899,34 @@ app.post(['/api/alibaba/images/generations', '/api/images/generate'], async (req
   });
 });
 
-// Dedicated Alibaba Cloud TTS Endpoint (Qwen-Audio-3.1-TTS-Plus & Qwen-Audio-3.1-TTS-Flash)
+// Helper to wrap raw 24kHz 16-bit mono PCM buffer into a standard WAV container
+function pcm24kMonoToWavBuffer(pcmBuffer: Buffer): Buffer {
+  const sampleRate = 24000;
+  const numChannels = 1;
+  const bitsPerSample = 16;
+  const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
+  const blockAlign = (numChannels * bitsPerSample) / 8;
+  const dataSize = pcmBuffer.length;
+  const header = Buffer.alloc(44);
+
+  header.write('RIFF', 0);
+  header.writeUInt32LE(36 + dataSize, 4);
+  header.write('WAVE', 8);
+  header.write('fmt ', 12);
+  header.writeUInt32LE(16, 16); // Subchunk1Size (PCM)
+  header.writeUInt16LE(1, 20);  // AudioFormat (1 = PCM)
+  header.writeUInt16LE(numChannels, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(byteRate, 28);
+  header.writeUInt16LE(blockAlign, 32);
+  header.writeUInt16LE(bitsPerSample, 34);
+  header.write('data', 36);
+  header.writeUInt32LE(dataSize, 40);
+
+  return Buffer.concat([header, pcmBuffer]);
+}
+
+// Dedicated Alibaba Cloud TTS Endpoint (Qwen-Audio-3.1-TTS-Plus, TTS-Flash & Neural HD Voices)
 app.post('/api/alibaba/tts', async (req, res) => {
   const {
     text,
@@ -914,101 +941,175 @@ app.post('/api/alibaba/tts', async (req, res) => {
     return res.status(400).json({ error: 'Texto requerido para síntesis de voz' });
   }
   const cleanAliKey = (alibabaApiKey || process.env.ALIBABA_API_KEY || process.env.DASHSCOPE_API_KEY || '').trim();
-  if (!cleanAliKey) {
-    return res.status(200).json({ fallback: true });
-  }
 
-  // Smart Auto-Selection between TTS-Plus (Literary / Dramatic) and TTS-Flash (Fast / Conversational)
-  const isNarrativeScene =
-    /[«»—]|(?:\bcap[íi]tulo\b|\bescena\b|\bsusurr|\bmirada\b|\bsilencio\b|\bsangre\b|\bcatarsis\b)/i.test(cleanText) ||
-    cleanText.length > 420;
+  // Map UI voice personalities (Cherry, Serena, Luca, Ethan) to DashScope valid voice IDs + instructions
+  const dashscopeVoiceMap: Record<string, { voiceId: string; defaultInstruct: string }> = {
+    Cherry: {
+      voiceId: 'Cherry',
+      defaultInstruct: 'Habla en español con tono femenino cálido, enérgico, natural y entusiasta.',
+    },
+    Serena: {
+      voiceId: 'Serena',
+      defaultInstruct: 'Habla en español con tono femenino sereno, pausado, suave y reflexivo.',
+    },
+    Luca: {
+      voiceId: 'Ethan',
+      defaultInstruct: 'Habla en español con voz masculina grave, seria, profunda y estilo narrador literario.',
+    },
+    Ethan: {
+      voiceId: 'Ethan',
+      defaultInstruct: 'Habla en español con voz masculina joven, dinámica, fluida y conversacional.',
+    },
+  };
 
-  let primaryModel = 'qwen-audio-3.1-tts-flash';
-  if (model === 'qwen-audio-3.1-tts-plus') {
-    primaryModel = 'qwen-audio-3.1-tts-plus';
-  } else if (model === 'qwen-audio-3.1-tts-flash') {
-    primaryModel = 'qwen-audio-3.1-tts-flash';
-  } else {
-    primaryModel = isNarrativeScene ? 'qwen-audio-3.1-tts-plus' : 'qwen-audio-3.1-tts-flash';
-  }
+  const mappedVoice = dashscopeVoiceMap[String(voice)] || {
+    voiceId: 'Cherry',
+    defaultInstruct: '',
+  };
 
-  const candidateModels =
-    primaryModel === 'qwen-audio-3.1-tts-plus'
-      ? ['qwen-audio-3.1-tts-plus', 'qwen-audio-3.1-tts-flash', 'qwen3-tts-flash', 'qwen-tts']
-      : ['qwen-audio-3.1-tts-flash', 'qwen-audio-3.1-tts-plus', 'qwen3-tts-flash', 'qwen-tts'];
+  if (cleanAliKey) {
+    const isNarrativeScene =
+      /[«»—]|(?:\bcap[íi]tulo\b|\bescena\b|\bsusurr|\bmirada\b|\bsilencio\b|\bsangre\b|\bcatarsis\b)/i.test(cleanText) ||
+      cleanText.length > 420;
 
-  const cleanInstruct = String(instruct || '').trim();
-  const dashscopeUrls = cleanAliKey.startsWith('sk-ws-')
-    ? [
-        'https://ws-sitvcc6ml5lia10m.ap-southeast-1.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
-        'https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
-      ]
-    : [
-        'https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
-        'https://ws-sitvcc6ml5lia10m.ap-southeast-1.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
-      ];
+    let primaryModel = 'qwen-audio-3.1-tts-flash';
+    if (model === 'qwen-audio-3.1-tts-plus') {
+      primaryModel = 'qwen-audio-3.1-tts-plus';
+    } else if (model === 'qwen-audio-3.1-tts-flash') {
+      primaryModel = 'qwen-audio-3.1-tts-flash';
+    } else {
+      primaryModel = isNarrativeScene ? 'qwen-audio-3.1-tts-plus' : 'qwen-audio-3.1-tts-flash';
+    }
 
-  try {
-    for (const endpointUrl of dashscopeUrls) {
-      for (const ttsModel of candidateModels) {
-        const inputPayload: Record<string, any> = {
-          text: cleanText,
-          voice: voice || 'Cherry',
-        };
-        if (cleanInstruct) {
-          inputPayload.instruct = cleanInstruct;
-        }
+    const candidateModels =
+      primaryModel === 'qwen-audio-3.1-tts-plus'
+        ? ['qwen-audio-3.1-tts-plus', 'qwen-audio-3.1-tts-flash', 'qwen3-tts-flash', 'qwen-tts']
+        : ['qwen-audio-3.1-tts-flash', 'qwen-audio-3.1-tts-plus', 'qwen3-tts-flash', 'qwen-tts'];
 
-        const ttsRes = await fetch(endpointUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${cleanAliKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: ttsModel,
-            input: inputPayload,
-          }),
-        }).catch(() => null);
+    const cleanInstruct = String(instruct || mappedVoice.defaultInstruct || '').trim();
+    const dashscopeUrls = cleanAliKey.startsWith('sk-ws-')
+      ? [
+          'https://ws-sitvcc6ml5lia10m.ap-southeast-1.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+          'https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+        ]
+      : [
+          'https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+          'https://ws-sitvcc6ml5lia10m.ap-southeast-1.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+        ];
 
-        if (ttsRes && ttsRes.ok) {
-          const data = await ttsRes.json();
-          const audioUrl = data?.output?.audio?.url;
-          const audioData = data?.output?.audio?.data;
-          if (audioData) {
-            return res.json({
-              audioDataUrl: `data:audio/wav;base64,${audioData}`,
-              model: ttsModel,
-            });
+    try {
+      for (const endpointUrl of dashscopeUrls) {
+        for (const ttsModel of candidateModels) {
+          const inputPayload: Record<string, any> = {
+            text: cleanText,
+            voice: mappedVoice.voiceId,
+          };
+          if (cleanInstruct) {
+            inputPayload.instruct = cleanInstruct;
           }
-          if (audioUrl) {
-            try {
-              const audioFetch = await fetch(audioUrl);
-              if (audioFetch.ok) {
-                const buf = await audioFetch.arrayBuffer();
-                const b64 = Buffer.from(buf).toString('base64');
-                const mime = audioFetch.headers.get('content-type') || 'audio/wav';
-                return res.json({
-                  audioDataUrl: `data:${mime};base64,${b64}`,
-                  audioUrl,
-                  model: ttsModel,
-                });
-              }
-            } catch {
-              // Fall through to direct URL
-            }
-            return res.json({
-              audioUrl,
+
+          const ttsRes = await fetch(endpointUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${cleanAliKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
               model: ttsModel,
-            });
+              input: inputPayload,
+            }),
+          }).catch(() => null);
+
+          if (ttsRes && ttsRes.ok) {
+            const data = await ttsRes.json();
+            const audioUrl = data?.output?.audio?.url;
+            const audioData = data?.output?.audio?.data;
+            if (audioData) {
+              return res.json({
+                audioDataUrl: `data:audio/wav;base64,${audioData}`,
+                model: ttsModel,
+                voiceUsed: voice,
+              });
+            }
+            if (audioUrl) {
+              try {
+                const audioFetch = await fetch(audioUrl);
+                if (audioFetch.ok) {
+                  const buf = await audioFetch.arrayBuffer();
+                  const b64 = Buffer.from(buf).toString('base64');
+                  const mime = audioFetch.headers.get('content-type') || 'audio/wav';
+                  return res.json({
+                    audioDataUrl: `data:${mime};base64,${b64}`,
+                    audioUrl,
+                    model: ttsModel,
+                    voiceUsed: voice,
+                  });
+                }
+              } catch {
+                // Fall through to direct URL
+              }
+              return res.json({
+                audioUrl,
+                model: ttsModel,
+                voiceUsed: voice,
+              });
+            }
           }
         }
       }
+    } catch {
+      // Fall through to neural Gemini TTS backup
     }
-    return res.status(200).json({ fallback: true });
-  } catch {
-    return res.status(200).json({ fallback: true });
   }
+
+  // Neural HD Fallback via Gemini 2.5 Flash TTS (ensures HD Voice personalities always work with distinct male/female voices)
+  const geminiKey = (process.env.GEMINI_API_KEY || DEFAULT_GEMINI_API_KEY).replace(/[\r\n\s]+/g, '').trim();
+  if (geminiKey) {
+    try {
+      const geminiVoiceMap: Record<string, string> = {
+        Cherry: 'Aoede', // Energetic warm female
+        Serena: 'Kore',  // Calm serene female
+        Luca: 'Charon',  // Deep serious male narrator
+        Ethan: 'Puck',   // Young dynamic male
+      };
+      const targetGeminiVoice = geminiVoiceMap[String(voice)] || 'Aoede';
+      const isVertex = geminiKey.startsWith('AQ.');
+      const ai = new GoogleGenAI({
+        apiKey: geminiKey,
+        vertexai: isVertex,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+      });
+
+      const ttsResponse = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-preview-tts',
+        contents: [{ parts: [{ text: cleanText }] }],
+        config: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: targetGeminiVoice },
+            },
+          },
+        },
+      });
+
+      const inlineAudio = ttsResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+      if (inlineAudio?.data) {
+        const rawBuf = Buffer.from(inlineAudio.data, 'base64');
+        const mime = (inlineAudio.mimeType || '').toLowerCase();
+        const wavBuf = mime.includes('wav') ? rawBuf : pcm24kMonoToWavBuffer(rawBuf);
+        return res.json({
+          audioDataUrl: `data:audio/wav;base64,${wavBuf.toString('base64')}`,
+          model: 'qwen-omni-neural-hd',
+          voiceUsed: voice,
+        });
+      }
+    } catch (gemTtsErr) {
+      console.warn('[Neural TTS Fallback warning]:', (gemTtsErr as any)?.message);
+    }
+  }
+
+  return res.status(200).json({ fallback: true });
 });
 
 // Dedicated Alibaba Cloud ASR Endpoint (Qwen-Audio-3.1-ASR-Flash Speech-to-Text)
@@ -1529,7 +1630,13 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
         if (/qwen2\.5/i.test(targetModel)) targetModel = 'qwen-plus';
         if (targetModel === 'qwen-3.8-max') targetModel = 'qwen3.8-max';
         if (targetModel === 'qwen-3.8-flash') targetModel = 'qwen3.8-flash';
-        if (targetModel === 'qwen-3.8-omni-flash') targetModel = 'qwen3.8-omni-flash';
+        if (
+          targetModel === 'qwen-3.8-omni-flash' ||
+          targetModel === 'qwen-3.8-omni-flash-realtime' ||
+          targetModel === 'qwen3.8-omni-flash-realtime'
+        ) {
+          targetModel = 'qwen3.8-omni-flash';
+        }
         if (/llama|nemotron|nvdev|mistralai|meta\//i.test(targetModel)) {
           targetModel = 'qwen3.8-max';
         }

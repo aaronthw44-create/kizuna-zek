@@ -238,7 +238,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsFolderSelectorOpen(!isFolderSelectorOpen)}
-                  className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors truncate cursor-pointer max-w-[150px] sm:max-w-[220px] select-none active:scale-95"
+                  className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors truncate cursor-pointer max-w-[110px] xs:max-w-[150px] sm:max-w-[220px] select-none active:scale-95"
                   title="Cambiar carpeta / arco"
                 >
                   <span className="truncate font-semibold">{folder ? folder.name : 'General'}</span>
@@ -329,7 +329,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               ) : (
                 <div className="flex items-center gap-1 group min-w-0">
                   <h1
-                    className="truncate max-w-[160px] xs:max-w-[210px] sm:max-w-xs text-xs sm:text-sm font-medium text-white leading-normal select-text"
+                    className="truncate max-w-[120px] xs:max-w-[170px] sm:max-w-xs text-xs sm:text-sm font-medium text-white leading-normal select-text"
                     title={chat.title}
                   >
                     {chat.title}
@@ -391,7 +391,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     : 'bg-emerald-400'
             } animate-pulse`}
           />
-          <span className="text-[10.5px] sm:text-[11px] font-semibold truncate max-w-[70px] xs:max-w-[90px] sm:max-w-[145px] flex items-center gap-1">
+          <span className="text-[10.5px] sm:text-[11px] font-semibold truncate max-w-[65px] xs:max-w-[85px] sm:max-w-[145px] flex items-center gap-1">
             {settings?.autoModelRouting ? (
               <span className="flex items-center gap-1 text-amber-300">
                 <span>✦</span>
@@ -407,10 +407,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 )}
                 <span>
                   {currentProvider === 'alibaba'
-                    ? (settings?.alibabaModel?.split('/')?.pop() || 'Qwen 3.8')
+                    ? (settings?.alibabaModel?.split('/')?.pop()?.replace(/^qwen-?/i, 'Qwen ') || 'Qwen 3.8')
                     : currentProvider === 'custom'
-                      ? (settings?.customModel?.split('/')?.pop() || 'Kimi K3')
-                      : (settings?.geminiModel || 'Gemini 3.6')}
+                      ? (settings?.customModel?.split('/')?.pop()?.replace(/^moonshotai\//i, '') || 'Kimi K3')
+                      : (settings?.geminiModel || 'Gemini 3.8')}
                 </span>
               </>
             )}
@@ -569,21 +569,24 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           <button
             type="button"
             onClick={() => setIsTokenGaugeOpen((prev) => !prev)}
-            className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 min-h-[38px] sm:min-h-[40px] bg-[#0d0d12] hover:bg-[#14141c] border border-[#22222a] hover:border-[#343442] rounded-xl shrink-0 cursor-pointer active:scale-95 transition-all"
+            className="flex items-center gap-1 sm:gap-2 px-1.5 sm:px-2.5 py-1 min-h-[36px] sm:min-h-[40px] bg-[#0d0d12] hover:bg-[#14141c] border border-[#22222a] hover:border-[#343442] rounded-xl shrink-0 cursor-pointer active:scale-95 transition-all"
             title={`Hilo Continuo Infinito: ${totalContextTokens.toLocaleString()} tokens procesados. Toca para ver desglose y documentos activos.`}
           >
             <Gauge size={12} className="text-emerald-400 shrink-0" />
-            <div className="flex flex-col items-start">
+            <div className="hidden sm:flex flex-col items-start">
               <span className="text-[9.5px] sm:text-[10px] font-mono text-white leading-tight whitespace-nowrap">
                 Infinito · {formattedTokenCount} tok
               </span>
-              <div className="w-full min-w-[54px] sm:w-16 h-1 bg-[#1a1a22] rounded-full overflow-hidden mt-0.5">
+              <div className="w-16 h-1 bg-[#1a1a22] rounded-full overflow-hidden mt-0.5">
                 <div
                   className="h-full bg-emerald-400 transition-all duration-300"
                   style={{ width: `${Math.max(contextPercentage, 5)}%` }}
                 />
               </div>
             </div>
+            <span className="sm:hidden text-[10px] font-mono text-emerald-300 font-semibold px-0.5 whitespace-nowrap">
+              {formattedTokenCount} tok
+            </span>
           </button>
 
           {/* Interactive Context & Quick Hub Popover for Mobile & PC */}

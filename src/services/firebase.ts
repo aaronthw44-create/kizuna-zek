@@ -9,6 +9,7 @@ import {
   Auth,
 } from 'firebase/auth';
 import {
+  initializeFirestore,
   getFirestore,
   Firestore,
   doc,
@@ -17,6 +18,7 @@ import {
   deleteDoc,
   collection,
   onSnapshot,
+  enableIndexedDbPersistence,
 } from 'firebase/firestore';
 import appletConfig from '../../firebase-applet-config.json';
 import { Chat, LoreFile } from '../types';
@@ -43,8 +45,23 @@ export const app: FirebaseApp = getApps().length > 0
 
 export const auth: Auth = getAuth(app);
 
-// Critical Firestore instance initialization using database ID
-export const db: Firestore = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// Critical Firestore instance initialization with auto-detect long polling for web environment stability
+export const db: Firestore = (() => {
+  const dbId = firebaseConfig.firestoreDatabaseId || '(default)';
+  try {
+    return initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true,
+    }, dbId);
+  } catch {
+    return getFirestore(app, dbId);
+  }
+})();
+
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(db).catch(() => {
+    // Ignore persistence enablement errors in multi-tab or restricted environments
+  });
+}
 
 export const googleProvider: GoogleAuthProvider = new GoogleAuthProvider();
 googleProvider.addScope('https://www.googleapis.com/auth/drive.file');
@@ -237,6 +254,10 @@ export function subscribeToUserChats(
       onChatsUpdate(remoteChats);
     },
     (error) => {
+      if (error?.code === 'unavailable' || (error?.message || '').includes('unavailable')) {
+        console.warn('Firestore operando en modo offline temporal:', error.message);
+        return;
+      }
       console.warn('Error en listener de Firestore para chats:', error);
     }
   );
@@ -265,6 +286,10 @@ export function subscribeToUserLoreFiles(
       onLoreUpdate(remoteLore);
     },
     (error) => {
+      if (error?.code === 'unavailable' || (error?.message || '').includes('unavailable')) {
+        console.warn('Firestore operando en modo offline temporal para LoreFiles:', error.message);
+        return;
+      }
       console.warn('Error en listener de Firestore para loreFiles:', error);
     }
   );

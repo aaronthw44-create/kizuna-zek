@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @keyframes noirFadeUp {
   0% {
     opacity: 0;
@@ -373,10 +375,27 @@ body.light-theme [class*="bg-zinc-800/60"] svg {
 
 /* 2. Expanded Reasoning Thought Drawer */
 body.light-theme [class*="bg-zinc-900/90"],
-body.light-theme [class*="bg-zinc-900"] {
+body.light-theme [class*="bg-zinc-900"],
+body.light-theme [class*="bg-[#151518]"],
+body.light-theme [class*="bg-[#121216]"],
+body.light-theme [class*="bg-[#111216]"],
+body.light-theme [class*="bg-[#0e0e12]"],
+body.light-theme [class*="bg-[#09090b]"] {
   background-color: #f4f4f5 !important;
   border-color: #e4e4e7 !important;
-  color: #3f3f46 !important;
+  color: #18181b !important;
+}
+
+body.light-theme [class*="bg-[#151518]"] p,
+body.light-theme [class*="bg-[#151518]"] span,
+body.light-theme [class*="bg-[#151518]"] h4,
+body.light-theme [class*="bg-[#151518]"] div {
+  color: #27272a !important;
+}
+
+body.light-theme [class*="bg-[#151518]"] [class*="text-amber-"],
+body.light-theme [class*="bg-[#151518]"] h4[class*="text-amber-"] {
+  color: #b45309 !important;
 }
 
 /* 3. Follow-up Arrow and Text in Light Mode */
@@ -386,6 +405,38 @@ body.light-theme .text-zinc-400 {
 }
 
 body.light-theme .text-zinc-500 {
+  color: #71717a !important;
+}
+
+body.light-theme .text-zinc-600,
+body.light-theme .text-zinc-700 {
+  color: #3f3f46 !important;
+}
+
+/* 4. Dropdown menus and Popovers in Day Mode */
+body.light-theme [class*="fixed"][class*="rounded-2xl"][class*="bg-"] {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme [class*="fixed"][class*="rounded-2xl"] button {
+  color: #27272a !important;
+}
+
+body.light-theme [class*="fixed"][class*="rounded-2xl"] button:hover {
+  background-color: #f4f4f5 !important;
+  color: #09090b !important;
+}
+
+body.light-theme [class*="fixed"][class*="rounded-2xl"] span,
+body.light-theme [class*="fixed"][class*="rounded-2xl"] p {
+  color: #27272a !important;
+}
+
+body.light-theme [class*="fixed"][class*="rounded-2xl"] div[class*="border-b"] {
+  border-color: #e4e4e7 !important;
   color: #71717a !important;
 }
 

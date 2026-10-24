@@ -25,6 +25,7 @@ import {
   Moon,
   Gamepad,
   CloudUpload,
+  Phone,
 } from 'lucide-react';
 import { RunicSealIcon } from './RunicSealIcon';
 import { BookBindingIcon } from './BookBindingIcon';
@@ -615,9 +616,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.95 }}
                   transition={{ duration: 0.12 }}
-                  className="fixed right-3 top-14 max-w-[min(320px,90vw)] w-full rounded-2xl bg-[#111216] border border-white/15 p-2 shadow-2xl z-[120] text-white space-y-1"
+                  className="fixed right-3 top-14 max-w-[min(320px,90vw)] w-full rounded-2xl bg-white dark:bg-[#111216] border border-zinc-200 dark:border-white/15 p-2 shadow-2xl z-[120] text-zinc-900 dark:text-white space-y-1"
                 >
-                  <div className="px-2.5 py-1.5 text-[11px] font-mono text-neutral-400 uppercase tracking-wider border-b border-white/10 mb-1">
+                  <div className="px-2.5 py-1.5 text-[11px] font-mono text-zinc-500 dark:text-neutral-400 uppercase tracking-wider border-b border-zinc-200 dark:border-white/10 mb-1">
                     Acciones y Herramientas
                   </div>
 
@@ -630,7 +631,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                         setIsOverflowOpen(false);
                         onToggleTheme();
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-medium text-[#d4d4d8] hover:text-white hover:bg-white/10 transition-colors cursor-pointer select-none active:scale-95"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-medium text-zinc-700 dark:text-[#d4d4d8] hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors cursor-pointer select-none active:scale-95"
                     >
                       {isLightMode ? <Moon size={16} /> : <Sun size={16} />}
                       <span>{isLightMode ? 'Cambiar a Modo Noir' : 'Cambiar a Modo Día'}</span>
@@ -646,9 +647,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                         setIsOverflowOpen(false);
                         onStartVoiceCall();
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-medium text-emerald-300 hover:text-white hover:bg-emerald-500/15 transition-colors cursor-pointer select-none active:scale-95"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-medium text-emerald-600 dark:text-emerald-300 hover:text-emerald-700 dark:hover:text-white hover:bg-emerald-50 dark:hover:bg-emerald-500/15 transition-colors cursor-pointer select-none active:scale-95"
                     >
-                      <span className="text-sm">📞</span>
+                      <Phone size={16} className="text-emerald-500 shrink-0" />
                       <span>Llamada Omni en Vivo (Voz)</span>
                     </button>
                   )}
@@ -661,10 +662,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                       setIsOverflowOpen(false);
                       onOpenSettings();
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-medium text-[#d4d4d8] hover:text-white hover:bg-white/10 transition-colors cursor-pointer select-none active:scale-95"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-medium text-zinc-700 dark:text-[#d4d4d8] hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors cursor-pointer select-none active:scale-95"
                   >
                     <SlidersHorizontal size={16} />
-                    <span>Ajustes generales (⚙️)</span>
+                    <span>Ajustes generales</span>
                   </button>
 
                   {/* Inspeccionar UI */}

@@ -230,21 +230,20 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         >
           <Menu className="w-5 h-5" />
         </button>
-        <div className="min-w-0 flex-1 flex flex-col justify-center ml-1.5 py-0.5">
+        <div className="min-w-0 flex-1 flex flex-col justify-center ml-1 sm:ml-1.5 py-0.5">
           {/* Breadcrumb row */}
           {chat && (
             <div className="relative z-20" ref={folderDropdownRef}>
-              <div className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-[#71717a] font-mono leading-tight mb-0.5 truncate">
+              <div className="flex items-center gap-1 text-[10.5px] sm:text-[11px] text-zinc-500 dark:text-[#71717a] font-mono leading-tight mb-0.5 truncate">
                 <button
                   type="button"
                   onClick={() => setIsFolderSelectorOpen(!isFolderSelectorOpen)}
-                  className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors truncate cursor-pointer max-w-[130px] sm:max-w-[180px] select-none active:scale-95"
+                  className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors truncate cursor-pointer max-w-[150px] sm:max-w-[220px] select-none active:scale-95"
                   title="Cambiar carpeta / arco"
                 >
-                  <span className="truncate font-semibold">{folder ? folder.name : 'Sin archivar (General)'}</span>
+                  <span className="truncate font-semibold">{folder ? folder.name : 'General'}</span>
                   <ChevronDown size={10} className="shrink-0 text-zinc-500" />
                 </button>
-                {folder && <span className="shrink-0 text-zinc-600">/ Arco</span>}
               </div>
               {/* Folder Selector Dropdown */}
               <AnimatePresence>
@@ -302,9 +301,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           )}
           {/* Title row */}
           {chat ? (
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-1 min-w-0">
               {isEditingTitle ? (
-                <div className="flex items-center gap-1.5 min-w-0">
+                <div className="flex items-center gap-1 min-w-0">
                   <input
                     type="text"
                     value={titleInput}
@@ -314,7 +313,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                       if (e.key === 'Escape') setIsEditingTitle(false);
                     }}
                     autoFocus
-                    className="bg-[#141418] border border-[#27272c] rounded px-2 py-0.5 text-xs text-white focus:outline-none focus:border-amber-400 font-medium max-w-[130px] sm:max-w-[200px]"
+                    className="bg-[#141418] border border-[#27272c] rounded px-2 py-0.5 text-xs text-white focus:outline-none focus:border-amber-400 font-medium max-w-[150px] sm:max-w-[220px]"
                   />
                   <button
                     type="button"
@@ -327,7 +326,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               ) : (
                 <div className="flex items-center gap-1 group min-w-0">
                   <h1
-                    className="truncate max-w-[95px] xs:max-w-[130px] sm:max-w-xs text-xs sm:text-sm font-medium text-white leading-normal"
+                    className="truncate max-w-[160px] xs:max-w-[210px] sm:max-w-xs text-xs sm:text-sm font-medium text-white leading-normal"
                     title={chat.title}
                   >
                     {chat.title}
@@ -335,7 +334,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsEditingTitle(true)}
-                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-zinc-500 hover:text-white transition-opacity shrink-0 cursor-pointer"
+                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-0.5 text-zinc-500 hover:text-white transition-opacity shrink-0 cursor-pointer"
                     title="Renombrar chat"
                   >
                     <Edit2 size={11} />
@@ -344,7 +343,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               )}
             </div>
           ) : (
-            <h1 className="truncate max-w-[140px] sm:max-w-xs text-sm font-medium text-white leading-normal">
+            <h1 className="truncate max-w-[160px] sm:max-w-xs text-sm font-medium text-white leading-normal">
               Kizuna-Zek
             </h1>
           )}
@@ -354,7 +353,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       {/* PS5 DualSense Gamepad Indicator */}
       {isGamepadConnected && (
         <div
-          className="flex items-center gap-1.5 px-2.5 py-1.5 min-h-[44px] rounded-xl text-xs font-mono bg-amber-500/15 border border-amber-500/40 text-amber-300 animate-noir-enter shrink-0 mr-2"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 min-h-[44px] rounded-xl text-xs font-mono bg-amber-500/15 border border-amber-500/40 text-amber-300 animate-noir-enter shrink-0 mr-1 sm:mr-2"
           title={`${gamepadName} activo • D-Pad/Sticks: Navegar | ✖: Seleccionar | ◯: Atrás | ■: Razonamiento | ▲: Modelos`}
         >
           <Gamepad size={15} className="text-amber-400 animate-pulse" />
@@ -367,7 +366,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         <button
           type="button"
           onClick={() => setIsModelMenuOpen((prev) => !prev)}
-          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 min-h-[38px] sm:min-h-[44px] rounded-xl text-xs font-mono border transition-all cursor-pointer select-none active:scale-95 ${
+          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 min-h-[36px] sm:min-h-[44px] rounded-xl text-xs font-mono border transition-all cursor-pointer select-none active:scale-95 ${
             settings?.autoModelRouting
               ? 'bg-amber-500/10 dark:bg-[#161410] border-amber-500/40 text-amber-300 hover:border-amber-400'
               : 'bg-zinc-100 dark:bg-[#141418] border-zinc-300 dark:border-[#27272c] text-zinc-800 dark:text-zinc-200 hover:text-black dark:hover:text-white'
@@ -389,11 +388,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     : 'bg-emerald-400'
             } animate-pulse`}
           />
-          <span className="text-[10.5px] sm:text-[11px] font-semibold truncate max-w-[78px] xs:max-w-[96px] sm:max-w-[145px] flex items-center gap-1">
+          <span className="text-[10.5px] sm:text-[11px] font-semibold truncate max-w-[70px] xs:max-w-[90px] sm:max-w-[145px] flex items-center gap-1">
             {settings?.autoModelRouting ? (
               <span className="flex items-center gap-1 text-amber-300">
                 <span>✦</span>
-                <span>Automático</span>
+                <span className="hidden sm:inline">Automático</span>
+                <span className="sm:hidden">Auto</span>
               </span>
             ) : (
               <>
@@ -412,7 +412,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               </>
             )}
           </span>
-          <ChevronDown size={11} className="text-zinc-500" />
+          <ChevronDown size={10} className="text-zinc-500 shrink-0" />
         </button>
 
         <AnimatePresence>

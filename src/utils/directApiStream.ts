@@ -771,6 +771,7 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
 
   const candidateModels = [
     geminiModel,
+    'gemini-4-argon',
     'gemini-3.8-flash',
     'gemini-3.8-live',
     'gemini-3.1-pro-preview',

@@ -432,6 +432,7 @@ app.get('/api/gemini/models', async (req, res) => {
   const apiKey = queryKey || process.env.GEMINI_API_KEY || DEFAULT_GEMINI_API_KEY;
 
   const defaultCoreModels = [
+    { id: 'gemini-4-argon', displayName: 'Gemini 4 Argon', description: 'Modelo Flagship SOTA de Google para razonamiento profundo (Tier Paid)' },
     { id: 'gemini-3.8-flash', displayName: 'Gemini 3.8 Flash', description: 'Modelo SOTA de Google para razonamiento profundo, lore y creatividad' },
     { id: 'gemini-3.8-live', displayName: 'Gemini 3.8 Live', description: 'Motor multimodal en vivo para llamadas de voz y baja latencia' },
     { id: 'gemini-3.1-pro-preview', displayName: 'Gemini 3.1 Pro Preview', description: 'Alta capacidad analítica para lógica compleja y manuscritos' },
@@ -482,6 +483,7 @@ app.get('/api/gemini/models', async (req, res) => {
 
     const allModels = Array.from(fetchedMap.values());
     const priorityOrder = [
+      'gemini-4-argon',
       'gemini-3.8-flash',
       'gemini-3.8-live',
       'gemini-3.1-pro-preview',
@@ -2763,6 +2765,7 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
 
       let targetGeminiModel = (model || 'gemini-3.8-flash').replace(/^models\//, '');
       const supportedGeminiModels = [
+        'gemini-4-argon',
         'gemini-3.8-flash',
         'gemini-3.8-live',
         'gemini-3.1-pro-preview',
@@ -2788,9 +2791,10 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
         ? `${geminiIdentity}\n\n${fullSystemInstruction}`
         : geminiIdentity;
 
-      // Model candidate list: Exclusively Gemini 3 series
+      // Model candidate list: Gemini 4 and Gemini 3 series
       const candidateModels = [
         targetGeminiModel,
+        'gemini-4-argon',
         'gemini-3.8-flash',
         'gemini-3.8-live',
         'gemini-3.1-pro-preview',
@@ -2883,9 +2887,6 @@ Tienes habilitada tu herramienta oficial nativa de Google Search en tiempo real.
             }
             const latestErrMsg = lastError?.message || String(lastError || '');
             if (latestErrMsg.includes('401') || latestErrMsg.includes('UNAUTHENTICATED') || latestErrMsg.includes('API_KEY_INVALID')) {
-              break;
-            }
-            if (latestErrMsg.includes('429') || latestErrMsg.includes('RESOURCE_EXHAUSTED') || latestErrMsg.includes('quota') || latestErrMsg.includes('Too Many Requests')) {
               break;
             }
           }

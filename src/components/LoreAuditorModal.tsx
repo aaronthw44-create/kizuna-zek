@@ -66,6 +66,7 @@ const AUDITOR_MODEL_GROUPS: AuditorModelGroup[] = [
     title: 'Google AI Studio (Gemini)',
     icon: '✨',
     models: [
+      { id: 'gemini-4-argon', provider: 'gemini', name: 'Gemini 4 Argon (Paid)', badge: 'SOTA Razonamiento', icon: '⚡' },
       { id: 'gemini-3.8-flash', provider: 'gemini', name: 'Gemini 3.8 Flash', badge: 'Ultra-Rápido', icon: '⚡' },
       { id: 'gemini-3.8-live', provider: 'gemini', name: 'Gemini 3.8 Live', badge: '1M Contexto + Visión', icon: '⚡' },
       { id: 'gemini-3.1-pro-preview', provider: 'gemini', name: 'Gemini 3.1 Pro', badge: 'Análisis Complejo', icon: '🧠' },

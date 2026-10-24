@@ -1118,11 +1118,14 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
     });
 
     const cleanUserPrompt = userContent.trim();
+    const visibleUserPrompt = cleanUserPrompt
+      .replace(/^\[MODO LLAMADA DE VOZ EN VIVO[\s\S]*?\]:\s*/i, '')
+      .trim() || cleanUserPrompt;
 
     // Auto-update title if it's the first message
     let updatedTitle = activeChat.title;
     if (activeChat.messages.length === 0 && activeChat.title === 'Nueva Conversación') {
-      const titleSeed = userContent.trim() || attachments[0]?.name || 'Escena Narrativa';
+      const titleSeed = visibleUserPrompt || attachments[0]?.name || 'Escena Narrativa';
       updatedTitle = titleSeed.slice(0, 32).trim();
     }
 
@@ -1176,7 +1179,7 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
 
     // Voice Call Guard: Ensure live voice calls exclusively use Omni / Realtime / Flash Live models (never text-only Kimi K3 or Qwen Max)
     if (isVoiceCallTurn) {
-      if (effectiveTurnProvider === 'custom') {
+      if (effectiveTurnProvider === 'custom' || (effectiveTurnProvider === 'alibaba' && !hasAlibabaKey)) {
         effectiveTurnProvider = hasAlibabaKey ? 'alibaba' : 'gemini';
         manualModelId = hasAlibabaKey ? 'qwen-3.8-omni-flash' : 'gemini-3.6-flash';
       } else if (effectiveTurnProvider === 'alibaba' && !/omni|realtime/i.test(manualModelId)) {
@@ -1299,10 +1302,10 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
       const userMessage: Message = {
         id: `msg_${Date.now()}_u`,
         role: 'user',
-        content: cleanUserPrompt,
+        content: visibleUserPrompt,
         timestamp: Date.now(),
         attachments: attachments.length > 0 ? attachments : undefined,
-        estimatedTokens: estimateTokenCount(cleanUserPrompt),
+        estimatedTokens: estimateTokenCount(visibleUserPrompt),
       };
 
       const assistantMessage: Message = {
@@ -1362,7 +1365,7 @@ Apenas me respondas, te generaré el prompt optimizado listo para guardar.`,
       );
 
       const historyToInclude = activeChat.messages.slice(-maxHistoryCount);
-      messagesPayload = [...historyToInclude, userMessage];
+      messagesPayload = [...historyToInclude, { ...userMessage, content: cleanUserPrompt }];
     } else {
       if (!isContinuationTurn) {
         processSmartMemory(userContent);
@@ -1889,25 +1892,27 @@ REGLAS DEL TALLER:
                     friendlyError = 'La conexión con Google Gemini se interrumpió al finalizar la respuesta. Si quedó incompleta, pulsa en Regenerar 🔄.';
                   }
 
-                  setErrorDiagnostic({
-                    message: friendlyError,
-                    status: is429 ? '429' : '500',
-                    engine: settings.provider === 'alibaba' ? 'alibaba' : settings.provider === 'custom' ? 'nvidia' : 'gemini',
-                    modelId: activeModelId,
-                    isVisionModel: isVisionModel(activeModelId),
-                    hadAttachments: attachments.length > 0,
-                    attachmentTypes: attachments.map((a) => a.fileType || a.type || 'archivo'),
-                    timestamp: new Date().toLocaleTimeString(),
-                    rawError: parsed.error,
-                    error: friendlyError,
-                    model: activeModelId,
-                    provider: settings.provider,
-                    hasImages,
-                    attachmentsCount: attachments.length,
-                    promptLength: userContent.length,
-                    temperature: settings.temperature,
-                    maxTokens: settings.maxOutputTokens,
-                  });
+                  if (!isVoiceCallTurn) {
+                    setErrorDiagnostic({
+                      message: friendlyError,
+                      status: is429 ? '429' : '500',
+                      engine: settings.provider === 'alibaba' ? 'alibaba' : settings.provider === 'custom' ? 'nvidia' : 'gemini',
+                      modelId: activeModelId,
+                      isVisionModel: isVisionModel(activeModelId),
+                      hadAttachments: attachments.length > 0,
+                      attachmentTypes: attachments.map((a) => a.fileType || a.type || 'archivo'),
+                      timestamp: new Date().toLocaleTimeString(),
+                      rawError: parsed.error,
+                      error: friendlyError,
+                      model: activeModelId,
+                      provider: settings.provider,
+                      hasImages,
+                      attachmentsCount: attachments.length,
+                      promptLength: userContent.length,
+                      temperature: settings.temperature,
+                      maxTokens: settings.maxOutputTokens,
+                    });
+                  }
                   setChats((prev) =>
                     prev.map((c) =>
                       c.id === activeChat.id
@@ -2140,8 +2145,12 @@ REGLAS DEL TALLER:
       if (voiceReplyCallbackRef.current) {
         const cb = voiceReplyCallbackRef.current;
         voiceReplyCallbackRef.current = null;
-        if (!userAbortedRef.current && fullRawStream.trim()) {
-          cb(fullRawStream);
+        if (!userAbortedRef.current) {
+          if (fullRawStream.trim()) {
+            cb(fullRawStream);
+          } else {
+            cb('Disculpá, hubo una breve interrupción al conectar con el servidor. ¿Me repetís lo que decías?');
+          }
         }
       }
     }

@@ -135,6 +135,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       rec.lang = 'es-ES';
 
       let finalCaptured = '';
+      let lastInterim = '';
 
       rec.onstart = () => {
         if (!isMountedRef.current || !isOpenRef.current) return;
@@ -155,6 +156,9 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         }
         if (finalStr) {
           finalCaptured += ' ' + finalStr;
+        }
+        if (interim.trim()) {
+          lastInterim = interim.trim();
         }
         const currentDisplay = (finalCaptured + ' ' + interim).trim();
         if (currentDisplay) {
@@ -180,7 +184,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
 
       rec.onend = () => {
         if (!isMountedRef.current || !isOpenRef.current) return;
-        const cleanSpoken = finalCaptured.trim();
+        const cleanSpoken = (finalCaptured.trim() || lastInterim.trim());
         if (cleanSpoken.length > 1) {
           // Always invoke via ref so latest voicePreset, HD/Eco mode, and model are used
           handleProcessSpokenTurnRef.current(cleanSpoken);
@@ -325,6 +329,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
               const src = ttsData.audioDataUrl || ttsData.audioUrl;
               const audio = new Audio(src);
               audioPlayerRef.current = audio;
+              let fallbackTriggered = false;
               audio.onended = () => {
                 if (isMountedRef.current && isOpenRef.current && !isMutedRef.current) {
                   startListening();
@@ -333,10 +338,21 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                 }
               };
               audio.onerror = () => {
-                speakWithBrowserTTS(cleanText);
+                if (!fallbackTriggered) {
+                  fallbackTriggered = true;
+                  speakWithBrowserTTS(cleanText);
+                }
               };
-              await audio.play();
-              return;
+              try {
+                await audio.play();
+                return;
+              } catch {
+                if (!fallbackTriggered) {
+                  fallbackTriggered = true;
+                  speakWithBrowserTTS(cleanText);
+                }
+                return;
+              }
             }
           }
         } catch {
@@ -482,6 +498,8 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   };
 
   const handleOrbTap = () => {
+    setIsModelSelectorOpen(false);
+    setIsVoicePickerOpen(false);
     if (callStatus === 'speaking' || callStatus === 'thinking') {
       stopAllAudioAndSpeech();
       onStopGeneration?.();

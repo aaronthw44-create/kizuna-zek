@@ -38,6 +38,8 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
+  const [isVoicePickerOpen, setIsVoicePickerOpen] = useState(false);
+  const [voicePreset, setVoicePreset] = useState<'Cherry' | 'Serena' | 'Luca' | 'Ethan'>('Cherry');
   // Default to Voz Eco (0 tokens / $0.00 quota) so calls never drain TTS quota unless user toggles HD
   const [useAlibabaHdVoice, setUseAlibabaHdVoice] = useState(false);
 
@@ -213,6 +215,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
             body: JSON.stringify({
               text: cleanText,
               alibabaApiKey: effectiveAliKey,
+              voice: voicePreset,
             }),
           });
           if (ttsRes.ok) {
@@ -243,7 +246,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       // 2. Instant Low-Battery Native Web Speech API
       speakWithBrowserTTS(cleanText);
     },
-    [alibabaApiKey, useAlibabaHdVoice, startListening]
+    [alibabaApiKey, useAlibabaHdVoice, voicePreset, startListening]
   );
 
   const speakWithBrowserTTS = useCallback(
@@ -254,7 +257,16 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       }
       window.speechSynthesis.cancel();
       const voices = window.speechSynthesis.getVoices();
-      const spanishVoice =
+
+      const isMasculine = voicePreset === 'Luca' || voicePreset === 'Ethan';
+      const targetVoice =
+        voices.find(
+          (v) =>
+            v.lang.startsWith('es') &&
+            (isMasculine
+              ? /male|jorge|pablo|diego|raul|carlos|enrique/i.test(v.name)
+              : /female|sabina|monica|helena|laura|google/i.test(v.name))
+        ) ||
         voices.find(
           (v) =>
             v.lang.startsWith('es') &&
@@ -264,10 +276,16 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         null;
 
       const utterance = new SpeechSynthesisUtterance(cleanText);
-      if (spanishVoice) utterance.voice = spanishVoice;
+      if (targetVoice) utterance.voice = targetVoice;
       utterance.lang = 'es-ES';
       utterance.rate = 1.03;
-      utterance.pitch = 0.98;
+
+      // Pitch adjustment based on selected voice personality
+      if (voicePreset === 'Cherry') utterance.pitch = 1.08; // Energetic female
+      else if (voicePreset === 'Serena') utterance.pitch = 0.94; // Calm female
+      else if (voicePreset === 'Luca') utterance.pitch = 0.82; // Serious male
+      else if (voicePreset === 'Ethan') utterance.pitch = 0.90; // Dynamic male
+      else utterance.pitch = 0.98;
 
       utterance.onend = () => {
         if (isMountedRef.current && isOpenRef.current && !isMutedRef.current) {
@@ -287,7 +305,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
 
       window.speechSynthesis.speak(utterance);
     },
-    [startListening]
+    [voicePreset, startListening]
   );
 
   const handleProcessSpokenTurn = useCallback(
@@ -450,19 +468,72 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setUseAlibabaHdVoice((v) => !v)}
-          className={`px-2.5 py-1.5 min-h-[44px] rounded-xl text-[11px] font-mono border transition-colors cursor-pointer flex items-center gap-1.5 ${
-            useAlibabaHdVoice
-              ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
-              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-          }`}
-          title="Voz Eco usa el motor nativo del celular (0 tokens de gasto). Voz Qwen HD usa síntesis neuronal de Alibaba Cloud."
-        >
-          <Sparkles size={12} />
-          <span>{useAlibabaHdVoice ? 'Voz HD Neural (Qwen Audio)' : 'Voz Eco ($0.00 extra)'}</span>
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Voice Personality Selector Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsVoicePickerOpen((v) => !v)}
+              className="px-2.5 py-1.5 min-h-[44px] rounded-xl text-[11px] font-mono border border-white/15 bg-white/5 hover:bg-white/10 text-zinc-200 transition-colors cursor-pointer flex items-center gap-1"
+              title="Cambiar personalidad de voz (Cherry, Serena, Luca, Ethan)"
+            >
+              <Volume2 size={12} className="text-amber-400" />
+              <span>{voicePreset}</span>
+              <ChevronDown size={11} className="text-zinc-400" />
+            </button>
+
+            {isVoicePickerOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-[#121218] border border-[#2a2a35] rounded-xl shadow-2xl p-2 z-[160] text-white space-y-1">
+                <div className="px-2 py-1 text-[10px] font-mono text-zinc-400 uppercase tracking-wider border-b border-[#22222d] mb-1">
+                  Personalidad de Voz
+                </div>
+                {[
+                  { id: 'Cherry', label: 'Cherry (Mujer Enérgica)', desc: 'Cálida, dinámica y entusiasta' },
+                  { id: 'Serena', label: 'Serena (Mujer Calma)', desc: 'Pausada, reflexiva y suave' },
+                  { id: 'Luca', label: 'Luca (Hombre Serio)', desc: 'Voz masculina estilo narrador' },
+                  { id: 'Ethan', label: 'Ethan (Hombre Joven)', desc: 'Voz masculina fluida y moderna' },
+                ].map((vp) => {
+                  const isSelected = voicePreset === vp.id;
+                  return (
+                    <button
+                      key={vp.id}
+                      type="button"
+                      onClick={() => {
+                        setVoicePreset(vp.id as any);
+                        setIsVoicePickerOpen(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30'
+                          : 'text-zinc-300 hover:bg-[#1f1f2a] hover:text-white'
+                      }`}
+                    >
+                      <div className="font-semibold flex items-center justify-between">
+                        <span>{vp.label}</span>
+                        {isSelected && <Check size={12} className="text-amber-400 shrink-0 ml-1" />}
+                      </div>
+                      <div className="text-[10px] text-zinc-400 font-mono mt-0.5">{vp.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setUseAlibabaHdVoice((v) => !v)}
+            className={`px-2.5 py-1.5 min-h-[44px] rounded-xl text-[11px] font-mono border transition-colors cursor-pointer flex items-center gap-1.5 ${
+              useAlibabaHdVoice
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+            }`}
+            title="Voz Eco usa el motor nativo del celular (0 tokens de gasto). Voz Qwen HD usa síntesis neuronal de Alibaba Cloud."
+          >
+            <Sparkles size={12} />
+            <span>{useAlibabaHdVoice ? 'Voz HD (Qwen)' : 'Voz Eco ($0)'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Center Interactive Orb (Battery-Optimized: No 120Hz Canvas, Pure Smooth Transitions) */}

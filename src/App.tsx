@@ -3439,6 +3439,7 @@ Ofrece un diagnóstico estructurado y recomendaciones de mejora de diseño.`;
           }
           activeProvider={settings.provider}
           alibabaApiKey={settings.alibabaApiKey}
+          onSelectQuickModel={(provider, model) => handleUpdateProvider(provider, model)}
           onStopGeneration={handleStopGeneration}
           onSendVoiceTurn={(spokenPrompt, onResponseReady, onError) => {
             voiceReplyCallbackRef.current = onResponseReady;

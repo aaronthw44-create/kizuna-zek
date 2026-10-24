@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { PhoneOff, Mic, MicOff, Volume2, VolumeX, Sparkles, Radio } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Volume2, VolumeX, Sparkles, Radio, ChevronDown, Check } from 'lucide-react';
 
 interface VoiceCallModalProps {
   isOpen: boolean;
@@ -7,6 +7,7 @@ interface VoiceCallModalProps {
   activeModelName: string;
   activeProvider: 'gemini' | 'custom' | 'alibaba';
   alibabaApiKey?: string;
+  onSelectQuickModel?: (provider: 'gemini' | 'custom' | 'alibaba', model: string) => void;
   onSendVoiceTurn: (
     spokenText: string,
     onResponseReady: (replyText: string) => void,
@@ -23,6 +24,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   activeModelName,
   activeProvider,
   alibabaApiKey,
+  onSelectQuickModel,
   onSendVoiceTurn,
   onStopGeneration,
 }) => {
@@ -35,6 +37,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
+  const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   // Default to Voz Eco (0 tokens / $0.00 quota) so calls never drain TTS quota unless user toggles HD
   const [useAlibabaHdVoice, setUseAlibabaHdVoice] = useState(false);
 
@@ -393,15 +396,56 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                 {formatDuration(callSeconds)}
               </span>
             </div>
-            <div className="text-[11px] font-mono text-zinc-400 flex items-center gap-1.5 flex-wrap">
-              <span>
-                {activeProvider === 'alibaba'
-                  ? `${activeModelName}`
-                  : activeModelName}
-              </span>
+            <div className="relative text-[11px] font-mono text-zinc-400 flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setIsModelSelectorOpen((v) => !v)}
+                className="flex items-center gap-1 text-emerald-300 font-semibold hover:underline cursor-pointer active:scale-95 transition-transform"
+                title="Toca para cambiar de modelo (Qwen Omni, Qwen Max, Gemini, Kimi)"
+              >
+                <span>{activeModelName}</span>
+                <ChevronDown size={12} className="text-emerald-400" />
+              </button>
               <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
-                🛡️ Modo Ahorro Cuota
+                🛡️ Ahorro Cuota
               </span>
+
+              {/* Quick Model Dropdown Card */}
+              {isModelSelectorOpen && (
+                <div className="absolute left-0 top-full mt-2 w-64 bg-[#121218] border border-[#2a2a35] rounded-xl shadow-2xl p-2 z-[160] text-white space-y-1">
+                  <div className="px-2 py-1 text-[10px] font-mono text-zinc-400 uppercase tracking-wider border-b border-[#22222d] mb-1">
+                    Cambiar Modelo en Vivo
+                  </div>
+                  {[
+                    { id: 'qwen-3.8-omni-flash', name: 'Qwen 3.8 Omni Flash', provider: 'alibaba' },
+                    { id: 'qwen-3.8-omni-flash-realtime', name: 'Qwen 3.8 Realtime Voice', provider: 'alibaba' },
+                    { id: 'qwen3.8-max', name: 'Qwen 3.8 Max (Prose)', provider: 'alibaba' },
+                    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', provider: 'gemini' },
+                    { id: 'gemini-4-argon', name: 'Gemini 4 Argon', provider: 'gemini' },
+                    { id: 'moonshotai/kimi-k3', name: 'Kimi K3 (NVIDIA NIM)', provider: 'custom' },
+                  ].map((m) => {
+                    const isSelected = activeModelName.toLowerCase().includes(m.id.toLowerCase()) || activeModelName === m.name;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => {
+                          onSelectQuickModel?.(m.provider as any, m.id);
+                          setIsModelSelectorOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-mono text-left transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30'
+                            : 'text-zinc-300 hover:bg-[#1f1f2a] hover:text-white'
+                        }`}
+                      >
+                        <span className="truncate">{m.name}</span>
+                        {isSelected && <Check size={12} className="text-emerald-400 shrink-0 ml-1" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

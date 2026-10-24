@@ -1,4 +1,4 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, FirebaseApp, setLogLevel } from 'firebase/app';
 import {
   getAuth,
   GoogleAuthProvider,
@@ -23,6 +23,11 @@ import {
 import appletConfig from '../../firebase-applet-config.json';
 import { Chat, LoreFile } from '../types';
 
+// Silence Firebase internal logger to prevent sandbox connection timeouts from polluting console
+try {
+  setLogLevel('silent');
+} catch {}
+
 export const firebaseConfig = {
   apiKey: appletConfig.apiKey || import.meta.env.VITE_FIREBASE_API_KEY || '',
   authDomain: appletConfig.authDomain || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
@@ -45,12 +50,12 @@ export const app: FirebaseApp = getApps().length > 0
 
 export const auth: Auth = getAuth(app);
 
-// Critical Firestore instance initialization with auto-detect long polling for web environment stability
+// Critical Firestore instance initialization with forced long polling to bypass WebSocket timeouts in sandboxes
 export const db: Firestore = (() => {
   const dbId = firebaseConfig.firestoreDatabaseId || '(default)';
   try {
     return initializeFirestore(app, {
-      experimentalAutoDetectLongPolling: true,
+      experimentalForceLongPolling: true,
     }, dbId);
   } catch {
     return getFirestore(app, dbId);

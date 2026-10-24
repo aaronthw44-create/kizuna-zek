@@ -1561,7 +1561,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
                     type="button"
-                    onClick={() => setCurrent({ ...current, provider: 'alibaba' })}
+                    onClick={() => setCurrent({ ...current, provider: 'alibaba', autoModelRouting: false })}
                     className={`p-3 rounded-md border text-left transition-colors cursor-pointer ${
                       current.provider === 'alibaba'
                         ? 'bg-[#141418] border-orange-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.15)]'
@@ -1581,7 +1581,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => setCurrent({ ...current, provider: 'custom' })}
+                    onClick={() => setCurrent({ ...current, provider: 'custom', autoModelRouting: false })}
                     className={`p-3 rounded-md border text-left transition-colors cursor-pointer ${
                       current.provider === 'custom'
                         ? 'bg-[#141418] border-white text-white'
@@ -1596,7 +1596,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => setCurrent({ ...current, provider: 'gemini' })}
+                    onClick={() => setCurrent({ ...current, provider: 'gemini', autoModelRouting: false })}
                     className={`p-3 rounded-md border text-left transition-colors cursor-pointer ${
                       current.provider === 'gemini'
                         ? 'bg-[#141418] border-white text-white'
@@ -1871,7 +1871,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                   return (
                                     <div
                                       key={m.id}
-                                      onClick={() => setCurrent({ ...current, alibabaModel: m.id })}
+                                      onClick={() => setCurrent({ ...current, provider: 'alibaba', alibabaModel: m.id, autoModelRouting: false })}
                                       className={`flex items-center justify-between p-2 rounded-md cursor-pointer text-xs font-mono transition-colors ${
                                         isSelected
                                           ? 'bg-orange-500 text-white font-semibold'
@@ -1934,7 +1934,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 return (
                                   <div
                                     key={m.id}
-                                    onClick={() => setCurrent({ ...current, alibabaModel: m.id })}
+                                    onClick={() => setCurrent({ ...current, provider: 'alibaba', alibabaModel: m.id, autoModelRouting: false })}
                                     className={`flex items-center justify-between p-2 rounded-md cursor-pointer text-xs font-mono transition-colors ${
                                       isSelected
                                         ? 'bg-orange-500 text-white font-semibold'
@@ -2245,7 +2245,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 return (
                                   <div
                                     key={m.id}
-                                    onClick={() => setCurrent({ ...current, customModel: m.id })}
+                                    onClick={() => setCurrent({ ...current, provider: 'custom', customModel: m.id, autoModelRouting: false })}
                                     className={`flex items-center justify-between p-2 rounded-md cursor-pointer text-xs font-mono transition-colors ${
                                       isSelected
                                         ? 'bg-white text-black font-semibold'
@@ -2308,7 +2308,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               return (
                                 <div
                                   key={m.id}
-                                  onClick={() => setCurrent({ ...current, customModel: m.id })}
+                                  onClick={() => setCurrent({ ...current, provider: 'custom', customModel: m.id, autoModelRouting: false })}
                                   className={`flex items-center justify-between p-2 rounded-md cursor-pointer text-xs font-mono transition-colors ${
                                     isSelected
                                       ? 'bg-white text-black font-semibold'
@@ -2543,7 +2543,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           return (
                             <div
                               key={mId}
-                              onClick={() => setCurrent({ ...current, geminiModel: mId })}
+                              onClick={() => setCurrent({ ...current, provider: 'gemini', geminiModel: mId, autoModelRouting: false })}
                               className={`flex items-center justify-between p-2 rounded-md cursor-pointer text-xs font-mono transition-colors ${
                                 isSelected
                                   ? 'bg-white text-black font-semibold'

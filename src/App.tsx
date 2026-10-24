@@ -3028,20 +3028,21 @@ Ofrece un diagnóstico estructurado y recomendaciones de mejora de diseño.`;
               const updated: AppSettings = {
                 ...prev,
                 provider: newProvider,
+                autoModelRouting: false,
                 ...(newProvider === 'gemini' 
-                  ? { geminiModel: newModel } 
+                  ? { geminiModel: newModel || 'gemini-3.8-flash' } 
                   : newProvider === 'alibaba'
-                    ? { alibabaModel: newModel }
-                    : { customModel: newModel }),
+                    ? { alibabaModel: newModel || 'qwen3.8-max' }
+                    : { customModel: newModel || 'moonshotai/kimi-k3' }),
               };
               saveSettings(updated);
               showToast(
                 `Modelo activo: ${
                   newProvider === 'gemini' 
-                    ? 'Gemini 3.6 Flash' 
+                    ? (newModel || 'Gemini 3.8 Flash') 
                     : newProvider === 'alibaba'
                       ? (newModel || 'Qwen 3.8 Max')
-                      : 'NVIDIA NIM'
+                      : (newModel || 'Kimi K3 (NVIDIA)')
                 }`
               );
               return updated;
@@ -3119,8 +3120,9 @@ Ofrece un diagnóstico estructurado y recomendaciones de mejora de diseño.`;
               const updated = {
                 ...prev,
                 provider: prov,
+                autoModelRouting: false,
                 ...(prov === 'gemini' 
-                  ? { geminiModel: mod || 'gemini-3.6-flash' } 
+                  ? { geminiModel: mod || 'gemini-3.8-flash' } 
                   : prov === 'alibaba'
                     ? { alibabaModel: mod || 'qwen3.8-max' }
                     : { customModel: mod || 'moonshotai/kimi-k3' }),

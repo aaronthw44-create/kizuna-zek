@@ -3052,7 +3052,7 @@ Ofrece un diagnóstico estructurado y recomendaciones de mejora de diseño.`;
           isAuditFinished={isAuditFinished}
           isLightMode={isLightMode}
           onToggleTheme={() => setIsLightMode(!isLightMode)}
-          reasoningMode={settings.reasoningMode || 'off'}
+          reasoningMode={settings.reasoningMode || 'deep'}
           onToggleReasoning={(newMode) => {
             setSettings((prev) => {
               const updated: AppSettings = {

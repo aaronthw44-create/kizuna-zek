@@ -151,8 +151,8 @@ export const INITIAL_SETTINGS: AppSettings = {
 - SÍNTESIS DE MEMORIA: Si durante la sesión el autor define un dato canónico nuevo, regla o revelación clave, añade al final de tu respuesta la etiqueta invisible: <<<SAVE_MEMORY: hecho conciso a guardar>>>.`,
   contextDepth: 'full',
   enableWebSearch: false,
-  enableReasoning: false,
-  reasoningMode: 'off',
+  enableReasoning: true,
+  reasoningMode: 'deep',
   memories: [
     {
       id: 'mem_default_1',

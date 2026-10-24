@@ -29,6 +29,7 @@ import {
   Palette,
   Loader2,
   Sparkles,
+  Brain,
   Timer,
   Gauge,
   CloudUpload,

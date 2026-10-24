@@ -36,7 +36,7 @@ import {
 import { RunicSealIcon } from './RunicSealIcon';
 import { LivingInkDrop } from './LivingInkDrop';
 import { Message, Attachment, LoreFile } from '../types';
-import { saveTextToGoogleDriveDoc } from '../services/googleDriveService';
+import { saveTextToGoogleDriveDoc, extractCleanDraftWithDeepSeek } from '../services/googleDriveService';
 
 interface ChatMessageProps {
   message: Message;
@@ -96,6 +96,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const [isIllustrating, setIsIllustrating] = useState(false);
   const [isSavingToDrive, setIsSavingToDrive] = useState(false);
   const [isDriveSaved, setIsDriveSaved] = useState(false);
+  const [apkDownloadModal, setApkDownloadModal] = useState<{
+    active: boolean;
+    step: string;
+    progress: number;
+    fileName: string;
+    webViewLink?: string;
+    isComplete?: boolean;
+  } | null>(null);
 
   const cleanMessageContentForExport = (raw: string): string => {
     return (raw || '')
@@ -127,29 +135,69 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const handleSaveToDrive = async () => {
     if (isSavingToDrive || !message.content.trim()) return;
     setIsSavingToDrive(true);
-    const cleanContent = cleanMessageContentForExport(message.content);
-    const firstLineMatch = cleanContent.match(/^#+\s*(.+)|^([^\n]{3,60})/);
-    const titleCandidate = firstLineMatch
-      ? (firstLineMatch[1] || firstLineMatch[2] || '').trim().replace(/[#*`_~]/g, '')
-      : '';
-    const docTitle = titleCandidate
-      ? `${titleCandidate.slice(0, 50)} (Kizuna)`
-      : `Escena Kizuna - ${new Date().toLocaleDateString('es-ES')}`;
+    setApkDownloadModal({
+      active: true,
+      step: '⚡ DeepSeek V4.1 Flash procesando borrador...',
+      progress: 25,
+      fileName: 'Analizando manuscrito...',
+    });
+
+    let key = '';
+    try {
+      const rawSettings = localStorage.getItem('kizuna_zek_v2_settings');
+      const parsed = rawSettings ? JSON.parse(rawSettings) : {};
+      key = (parsed.alibabaApiKey || localStorage.getItem('kizuna_alibaba_api_key') || '').trim();
+    } catch {}
+
+    let cleanTitle = 'Escena_Kizuna';
+    let cleanContent = cleanMessageContentForExport(message.content);
 
     try {
+      // 1. Run DeepSeek V4.1 Flash to extract strictly clean manuscript prose without AI filler
+      const extracted = await extractCleanDraftWithDeepSeek(message.content, key);
+      cleanTitle = extracted.title || cleanTitle;
+      cleanContent = extracted.content || cleanContent;
+
+      setApkDownloadModal({
+        active: true,
+        step: '☁️ Sincronizando y guardando en Google Drive...',
+        progress: 65,
+        fileName: `${cleanTitle}.docx`,
+      });
+
+      // 2. Upload Google Doc to Drive
+      const docTitle = `${cleanTitle} (Kizuna)`;
       const result = await saveTextToGoogleDriveDoc(docTitle, cleanContent);
       setIsDriveSaved(true);
+
+      setApkDownloadModal({
+        active: true,
+        step: '✅ ¡Manuscrito sincronizado con Google Drive!',
+        progress: 100,
+        fileName: result.name,
+        webViewLink: result.webViewLink,
+        isComplete: true,
+      });
+
       onShowToast?.(`✓ Guardado en tu Google Drive: "${result.name}"`);
       setTimeout(() => setIsDriveSaved(false), 3500);
     } catch (err: any) {
       console.warn('Google Drive save notice:', err);
-      // Resilient protection: automatically download the entire scene locally as Markdown so user never loses their prose!
-      downloadSceneLocally(cleanContent, titleCandidate || 'Escena');
+      downloadSceneLocally(cleanContent, cleanTitle || 'Escena');
       const isNetworkOrPopup = (err?.message || '').includes('bloqueó') || (err?.code || '').includes('network') || (err?.message || '').includes('network');
+
+      setApkDownloadModal({
+        active: true,
+        step: '💾 Manuscrito descargado (.md)',
+        progress: 100,
+        fileName: `${cleanTitle}.md`,
+        isComplete: true,
+      });
+
       if (isNetworkOrPopup) {
-        onShowToast?.(`💾 Descargado como "${titleCandidate || 'Escena'}.md" (el navegador bloqueó la ventana de Google).`);
+        onShowToast?.(`💾 Descargado como "${cleanTitle}.md" (popup bloqueado).`);
       } else {
-        onShowToast?.(`💾 Descargado como archivo ("${titleCandidate || 'Escena'}.md").`);
+        onShowToast?.(`💾 Descargado localmente como "${cleanTitle}.md".`);
       }
     } finally {
       setIsSavingToDrive(false);
@@ -1514,6 +1562,94 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
           )}
         </div>
       </div>
+
+      {/* APK / Play Store Style Download Progress Modal */}
+      <AnimatePresence>
+        {apkDownloadModal?.active && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 20 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none"
+          >
+            <div className="w-full max-w-sm bg-[#09090b] border border-[#272730] rounded-3xl p-5 shadow-2xl space-y-4 text-white relative overflow-hidden">
+              {/* Glow Header Accent */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500" />
+
+              {/* APK / App Icon Header */}
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-cyan-500/20 to-blue-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 shadow-inner">
+                  <CloudUpload className={`w-6 h-6 ${apkDownloadModal.isComplete ? 'text-emerald-400' : 'text-cyan-400 animate-bounce'}`} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold">
+                      APK / Drive Package
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-white truncate mt-0.5">
+                    {apkDownloadModal.fileName || 'Kizuna_Manuscrito.docx'}
+                  </h3>
+                  <p className="text-[11px] font-mono text-zinc-400 truncate">
+                    {apkDownloadModal.step}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex justify-between items-center text-[11px] font-mono">
+                  <span className="text-zinc-400">
+                    {apkDownloadModal.isComplete ? 'Descargado y Guardado' : 'Procesando paquete...'}
+                  </span>
+                  <span className="font-bold text-emerald-400">{apkDownloadModal.progress}%</span>
+                </div>
+                <div className="h-2.5 w-full bg-[#181820] rounded-full overflow-hidden border border-[#262632] p-0.5">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-blue-500 rounded-full"
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${apkDownloadModal.progress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+              </div>
+
+              {/* Sub-status Indicator */}
+              <div className="p-3 rounded-2xl bg-[#121218] border border-[#1f1f2a] text-xs font-mono space-y-1">
+                <div className="flex items-center gap-2 text-zinc-300">
+                  <Sparkles size={13} className="text-amber-400 shrink-0" />
+                  <span className="text-[11px] font-semibold text-amber-300">Filtro DeepSeek V4.1 Flash activo</span>
+                </div>
+                <p className="text-[10px] text-zinc-400 leading-tight pl-5">
+                  Extrayendo prosa y estructura limpia sin saludos ni comentarios meta.
+                </p>
+              </div>
+
+              {/* Action Footer */}
+              <div className="flex items-center justify-end gap-2 pt-1">
+                {apkDownloadModal.webViewLink && (
+                  <a
+                    href={apkDownloadModal.webViewLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[40px] rounded-xl text-xs font-bold bg-emerald-500 text-black hover:bg-emerald-400 active:scale-95 transition-all shadow-md cursor-pointer"
+                  >
+                    <ExternalLink size={13} />
+                    <span>Abrir en Drive</span>
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setApkDownloadModal(null)}
+                  className="px-3.5 py-2 min-h-[40px] rounded-xl text-xs font-medium bg-[#1a1a22] hover:bg-[#252530] text-zinc-300 active:scale-95 transition-colors cursor-pointer"
+                >
+                  {apkDownloadModal.isComplete ? 'Listo' : 'Cerrar'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }, (prevProps, nextProps) => {

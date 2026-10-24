@@ -265,3 +265,108 @@ export const saveTextToGoogleDriveDoc = async (
 
   return { success: true, webViewLink: docResult.webViewLink, name: docResult.name };
 };
+
+/**
+ * Uses DeepSeek V4.1 Flash to extract strictly clean manuscript prose or structure
+ * removing conversational AI filler before saving to Google Drive.
+ */
+export async function extractCleanDraftWithDeepSeek(
+  rawContent: string,
+  alibabaApiKey?: string
+): Promise<{ title: string; content: string }> {
+  const cleanFallback = rawContent
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<thought>[\s\S]*?<\/thought>/gi, '')
+    .replace(/<<<FOLLOW_UP>>>[\s\S]*$/gi, '')
+    .replace(/<<<SAVE_MEMORY:[\s\S]*?>>>/gi, '')
+    .trim();
+
+  if (cleanFallback.length < 120) {
+    return {
+      title: 'Borrador_Kizuna',
+      content: cleanFallback,
+    };
+  }
+
+  const prompt = `Analiza el siguiente texto de un asistente de escritura y extrae ÚNICAMENTE la escena, capítulo, borrador o estructura narrativa propuesta.
+
+[TEXTO COMPLETO]:
+${cleanFallback.slice(0, 6000)}
+
+REGLAS ESTRICTAS DE EXTRACCIÓN EDITORIAL:
+1. Elimina cualquier saludo, comentario conversacional ("Aquí tienes...", "Espero que te guste...", "Pásame el párrafo..."), preguntas de seguimiento y explicaciones meta.
+2. Mantén intacto el cuerpo del capítulo, diálogo, borrador o estructura.
+3. Si hay un título en el capítulo o borrador, ponlo en la primera línea como "# Título".
+4. Devuelve ÚNICAMENTE el texto limpio sin ningún preámbulo ni frase de tu propia parte.`;
+
+  try {
+    const key = alibabaApiKey || localStorage.getItem('kizuna_alibaba_api_key') || '';
+    if (!key) {
+      return { title: 'Escena_Kizuna', content: cleanFallback };
+    }
+
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ id: `ext_${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() }],
+        systemInstruction: 'Eres un extractor editorial de manuscritos. Tu única función es devolver la prosa o estructura sin saludos ni comentarios.',
+        provider: 'alibaba',
+        customConfig: {
+          apiKey: key,
+          alibabaApiKey: key,
+          alibabaBaseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+          alibabaModel: 'deepseek-v4.1-flash-1017',
+          baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+          model: 'deepseek-v4.1-flash-1017',
+        },
+        maxOutputTokens: 2048,
+        temperature: 0.1,
+        model: 'deepseek-v4.1-flash-1017',
+        enableReasoning: false,
+        reasoningMode: 'off',
+      }),
+    });
+
+    if (res.ok && res.body) {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let extractedText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          try {
+            const parsed = JSON.parse(trimmed.replace(/^data:\s*/, ''));
+            if (parsed.text) extractedText += parsed.text;
+          } catch {}
+        }
+      }
+
+      const cleanAI = extractedText
+        .replace(/<think>[\s\S]*?<\/think>/gi, '')
+        .replace(/<thought>[\s\S]*?<\/thought>/gi, '')
+        .trim();
+
+      if (cleanAI.length > 50) {
+        const firstLineMatch = cleanAI.match(/^#+\s*(.+)|^([^\n]{3,60})/);
+        const titleCandidate = firstLineMatch
+          ? (firstLineMatch[1] || firstLineMatch[2] || '').trim().replace(/[#*`_~]/g, '')
+          : 'Escena_Manuscrito';
+        return { title: titleCandidate, content: cleanAI };
+      }
+    }
+  } catch (e) {
+    console.warn('DeepSeek Flash extraction error, using fallback:', e);
+  }
+
+  return { title: 'Escena_Kizuna', content: cleanFallback };
+}
+

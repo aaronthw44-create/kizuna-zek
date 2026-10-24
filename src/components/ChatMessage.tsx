@@ -137,7 +137,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     setIsSavingToDrive(true);
     setApkDownloadModal({
       active: true,
-      step: '⚡ DeepSeek V4.1 Flash procesando borrador...',
+      step: 'DeepSeek V4.1 Flash procesando borrador...',
       progress: 25,
       fileName: 'Analizando manuscrito...',
     });
@@ -160,7 +160,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
 
       setApkDownloadModal({
         active: true,
-        step: '☁️ Sincronizando y guardando en Google Drive...',
+        step: 'Sincronizando y guardando en Google Drive...',
         progress: 65,
         fileName: `${cleanTitle}.docx`,
       });
@@ -172,14 +172,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
 
       setApkDownloadModal({
         active: true,
-        step: '✅ ¡Manuscrito sincronizado con Google Drive!',
+        step: 'Manuscrito guardado en Google Drive',
         progress: 100,
         fileName: result.name,
         webViewLink: result.webViewLink,
         isComplete: true,
       });
 
-      onShowToast?.(`✓ Guardado en tu Google Drive: "${result.name}"`);
+      onShowToast?.(`Guardado en tu Google Drive: "${result.name}"`);
       setTimeout(() => setIsDriveSaved(false), 3500);
     } catch (err: any) {
       console.warn('Google Drive save notice:', err);
@@ -188,16 +188,16 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
 
       setApkDownloadModal({
         active: true,
-        step: '💾 Manuscrito descargado (.md)',
+        step: 'Manuscrito descargado (.md)',
         progress: 100,
         fileName: `${cleanTitle}.md`,
         isComplete: true,
       });
 
       if (isNetworkOrPopup) {
-        onShowToast?.(`💾 Descargado como "${cleanTitle}.md" (popup bloqueado).`);
+        onShowToast?.(`Descargado como "${cleanTitle}.md" (popup bloqueado).`);
       } else {
-        onShowToast?.(`💾 Descargado localmente como "${cleanTitle}.md".`);
+        onShowToast?.(`Descargado localmente como "${cleanTitle}.md".`);
       }
     } finally {
       setIsSavingToDrive(false);

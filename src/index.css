@@ -1,0 +1,1576 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@keyframes noirFadeUp {
+  0% {
+    opacity: 0.92;
+    transform: translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes subtleNoirPulse {
+  0%, 100% {
+    box-shadow: 0 0 12px -4px rgba(255, 255, 255, 0.06);
+  }
+  50% {
+    box-shadow: 0 0 16px -2px rgba(255, 255, 255, 0.1);
+  }
+}
+
+.animate-noir-enter {
+  animation: noirFadeUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes livingOrbFloat {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.025);
+  }
+}
+
+.animate-orb-float {
+  animation: livingOrbFloat 4.5s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin 16s linear infinite;
+}
+
+.input-noir-focused {
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+    0 10px 32px -6px rgba(0, 0, 0, 0.55),
+    0 0 18px -4px rgba(245, 158, 11, 0.12);
+}
+
+@keyframes kzStreamWave {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes kzComposerBreath {
+  0%, 100% {
+    border-color: rgba(245, 158, 11, 0.32);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45), 0 0 18px -4px rgba(245, 158, 11, 0.16);
+  }
+  50% {
+    border-color: rgba(251, 191, 36, 0.58);
+    box-shadow: 0 8px 34px rgba(0, 0, 0, 0.5), 0 0 26px -2px rgba(245, 158, 11, 0.3);
+  }
+}
+
+.kz-header-stream-wave {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(245, 158, 11, 0.65) 28%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(56, 189, 248, 0.65) 72%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: kzStreamWave 2.4s linear infinite;
+}
+
+.kz-composer-streaming-aura {
+  animation: kzComposerBreath 2.6s ease-in-out infinite;
+}
+
+/* Universal scrollbar hiding for horizontal chip rails */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+@layer base {
+  :root {
+    --bg-noir: #09090b;
+    --panel-noir: #0c0c0e;
+    --subpanel-noir: #121215;
+    --card-noir: #18181b;
+    --border-noir: #27272a;
+    --border-noir-subtle: #1c1c1f;
+    --text-primary: #f4f4f5;
+    --text-muted: #a1a1aa;
+  }
+
+  html, body {
+    height: 100dvh;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    background-color: #09090b;
+    color: #f4f4f5;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  code, pre, kbd, samp, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* =========================================================
+   OPENWEBUI DAY / LIGHT MODE COMPREHENSIVE PALETTE
+   ========================================================= */
+html.light,
+body.light-theme {
+  background-color: #ffffff !important;
+  color: #18181b !important;
+}
+
+html.light main,
+body.light-theme main {
+  background-color: #ffffff !important;
+}
+
+/* 1. SIDEBAR & INNER ITEMS */
+html.light aside,
+body.light-theme aside {
+  background-color: #f8f8fa !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+body.light-theme aside > div {
+  background-color: #f8f8fa !important;
+  border-color: #e4e4e7 !important;
+}
+
+/* Sidebar KZ Brand Logo Badge */
+body.light-theme aside .kz-brand-badge,
+body.light-theme aside div.bg-white.text-black {
+  background-color: #18181b !important;
+  border-color: #18181b !important;
+  color: #ffffff !important;
+}
+
+/* Sidebar Active Chat & Active Folder Highlight */
+body.light-theme aside [class*="bg-[#18181d]"],
+body.light-theme aside [class*="bg-[#16161a]"],
+body.light-theme aside [class*="bg-[#141418]"] {
+  background-color: #e4e4e7 !important;
+  color: #09090b !important;
+  border-color: #d4d4d8 !important;
+}
+
+body.light-theme aside [class*="bg-[#18181d]"] span,
+body.light-theme aside [class*="bg-[#16161a]"] span,
+body.light-theme aside [class*="bg-[#141418]"] span {
+  color: #09090b !important;
+}
+
+/* Sidebar Bottom Utility Buttons, Auth Profile Card & Search Box */
+body.light-theme aside [class*="bg-[#0d0d11]"],
+body.light-theme aside button[class*="bg-[#101014]"],
+body.light-theme aside [class*="bg-[#101013]"] {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+/* Sidebar Counter Badges */
+body.light-theme aside span[class*="bg-[#1f1f23]"] {
+  background-color: #e4e4e7 !important;
+  color: #27272a !important;
+}
+
+/* Sidebar Amber Catalyst Button */
+body.light-theme aside button[class*="bg-amber-950"] {
+  background-color: #fffbeb !important;
+  border-color: #fcd34d !important;
+  color: #b45309 !important;
+}
+body.light-theme aside button[class*="bg-amber-950"] span,
+body.light-theme aside button[class*="bg-amber-950"] svg {
+  color: #b45309 !important;
+}
+
+body.light-theme aside .text-white:not(.kz-brand-badge),
+body.light-theme aside [class*="text-[#d4d4d8]"],
+body.light-theme aside p {
+  color: #18181b !important;
+}
+
+body.light-theme aside [class*="text-[#a1a1aa]"],
+body.light-theme aside [class*="text-[#71717a]"],
+body.light-theme aside [class*="text-[#52525b]"] {
+  color: #71717a !important;
+}
+
+body.light-theme aside input {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+body.light-theme aside button:not([class*="bg-white"]):not([class*="bg-amber-950"]):hover {
+  background-color: #e4e4e7 !important;
+}
+
+body.light-theme aside button[class*="bg-white"] {
+  background-color: #18181b !important;
+  color: #ffffff !important;
+}
+body.light-theme aside button[class*="bg-white"] span,
+body.light-theme aside button[class*="bg-white"] svg {
+  color: #ffffff !important;
+}
+
+/* 2. HEADER, GAUGE & PILLS (Fixes black carbon pills & invisible icons) */
+body.light-theme header,
+html.light header {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+body.light-theme header [class*="bg-[#121216]"],
+body.light-theme header [class*="bg-[#0e0e12]"],
+body.light-theme header [class*="bg-[#141418]"],
+body.light-theme header [class*="bg-[#09090b]"],
+body.light-theme header [class*="bg-[#101014]"],
+body.light-theme header button[class*="bg-white/"] {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+body.light-theme header [class*="text-white"],
+body.light-theme header [class*="text-[#d4d4d8]"],
+body.light-theme header [class*="text-neutral-100"],
+body.light-theme header [class*="text-neutral-200"],
+body.light-theme header [class*="text-neutral-300"] {
+  color: #18181b !important;
+}
+
+/* Token gauge pill & track */
+body.light-theme header [class*="bg-[#1a1a1e]"] {
+  background-color: #e4e4e7 !important;
+}
+body.light-theme header [class*="bg-[#1a1a1e]"] div {
+  background-color: #18181b !important;
+}
+
+/* Cajita counter badge */
+body.light-theme header [class*="bg-[#1f1f23]"] {
+  background-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+/* Title input edit box */
+body.light-theme header input {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+/* 3. ALL DROPDOWNS & OVERFLOW MENUS (Fixes unreadable dark menus without hitting Hamburger button) */
+body.light-theme header [class*="top-full"],
+body.light-theme [class*="bg-[#111216]"],
+body.light-theme [class*="bg-[#0a0a0d]"],
+body.light-theme [class*="bg-[#0e0e12]"],
+body.light-theme [class*="bg-[#09090c]"] {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light-theme [class*="bg-[#111216]"] button,
+body.light-theme [class*="bg-[#0a0a0d]"] button,
+body.light-theme [class*="bg-[#0e0e12]"] button {
+  color: #18181b !important;
+}
+
+body.light-theme [class*="bg-[#111216]"] button:hover,
+body.light-theme [class*="bg-[#0a0a0d]"] button:hover,
+body.light-theme [class*="bg-[#0e0e12]"] button:hover {
+  background-color: #f4f4f5 !important;
+}
+
+body.light-theme [class*="bg-[#111216]"] span,
+body.light-theme [class*="bg-[#0a0a0d]"] span,
+body.light-theme [class*="bg-[#0e0e12]"] span {
+  color: #18181b !important;
+}
+
+body.light-theme [class*="bg-[#111216]"] [class*="text-neutral-400"],
+body.light-theme [class*="bg-[#111216]"] [class*="text-[#71717a]"],
+body.light-theme [class*="bg-[#0a0a0d]"] [class*="text-[#71717a]"] {
+  color: #71717a !important;
+}
+
+body.light-theme [class*="bg-[#111216]"] [class*="border-"],
+body.light-theme [class*="bg-[#0a0a0d]"] [class*="border-"] {
+  border-color: #e4e4e7 !important;
+}
+
+/* =========================================================
+   COMPREHENSIVE LIGHT THEME FOR SETTINGS & WORKSPACE MODALS
+   ========================================================= */
+
+/* 1. Modal Dialog Outer Shell */
+body.light-theme .modal-sheet-fluid {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+body.light-theme .modal-sheet-fluid div[class*="border-b"],
+body.light-theme .modal-sheet-fluid div[class*="border-t"] {
+  background-color: #fafafa !important;
+  border-color: #e4e4e7 !important;
+}
+
+/* 2. Catch-All for ALL Dark Panels, Containers & Boxes inside Modals */
+body.light-theme .modal-sheet-fluid [class*="bg-[#0"],
+body.light-theme .modal-sheet-fluid [class*="bg-[#1"],
+body.light-theme .modal-sheet-fluid [class*="bg-black"],
+body.light-theme .modal-sheet-fluid [class*="bg-zinc-9"],
+body.light-theme .modal-sheet-fluid [class*="bg-zinc-8"] {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+/* 3. Unselected Buttons (1024, 2048, 4096, Instantáneo, Equilibrado, Model rows) */
+body.light-theme .modal-sheet-fluid button[class*="bg-"],
+body.light-theme .modal-sheet-fluid div[role="button"],
+body.light-theme .modal-sheet-fluid .grid button {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+body.light-theme .modal-sheet-fluid button[class*="bg-"]:hover,
+body.light-theme .modal-sheet-fluid .grid button:hover {
+  background-color: #ececee !important;
+}
+
+/* 4. ACTIVE / SELECTED BUTTON HIGHLIGHT (e.g., 8192, Profundo CoT) */
+body.light-theme .modal-sheet-fluid [class*="border-amber"],
+body.light-theme .modal-sheet-fluid [class*="ring-amber"],
+body.light-theme .modal-sheet-fluid [class*="bg-amber-500/10"],
+body.light-theme .modal-sheet-fluid button[class*="border-amber"] {
+  background-color: #fffbeb !important;
+  border-color: #f59e0b !important;
+  color: #92400e !important;
+}
+
+body.light-theme .modal-sheet-fluid [class*="border-amber"] span,
+body.light-theme .modal-sheet-fluid [class*="border-amber"] p {
+  color: #92400e !important;
+}
+
+/* 5. Inputs, Textareas & Search Bars */
+body.light-theme .modal-sheet-fluid input,
+body.light-theme .modal-sheet-fluid textarea {
+  background-color: #ffffff !important;
+  border-color: #d4d4d8 !important;
+  color: #18181b !important;
+}
+
+body.light-theme .modal-sheet-fluid input::placeholder,
+body.light-theme .modal-sheet-fluid textarea::placeholder {
+  color: #a1a1aa !important;
+}
+
+/* 6. Mini-Pills & Badges (e.g., "1M Tokens", "15 Mensajes", token counts) */
+body.light-theme .modal-sheet-fluid span[class*="font-mono"][class*="bg-"] {
+  background-color: #e4e4e7 !important;
+  color: #52525b !important;
+  border-color: #d4d4d8 !important;
+}
+
+/* 7. Typography Normalization inside Modals */
+body.light-theme .modal-sheet-fluid h2,
+body.light-theme .modal-sheet-fluid h3,
+body.light-theme .modal-sheet-fluid h4,
+body.light-theme .modal-sheet-fluid .text-white,
+body.light-theme .modal-sheet-fluid .text-zinc-100,
+body.light-theme .modal-sheet-fluid .text-zinc-200,
+body.light-theme .modal-sheet-fluid .text-zinc-300 {
+  color: #18181b !important;
+}
+
+body.light-theme .modal-sheet-fluid p,
+body.light-theme .modal-sheet-fluid [class*="text-[#a1a1aa]"],
+body.light-theme .modal-sheet-fluid [class*="text-[#71717a]"],
+body.light-theme .modal-sheet-fluid .text-zinc-400,
+body.light-theme .modal-sheet-fluid .text-zinc-500 {
+  color: #71717a !important;
+}
+
+/* 8. Modal Backdrop Overlay */
+body.light-theme .modal-backdrop-fluid,
+body.light-theme [class*="bg-black/"],
+body.light-theme [class*="bg-black/60"],
+body.light-theme [class*="bg-black/50"] {
+  background-color: rgba(0, 0, 0, 0.45) !important;
+}
+
+/* 5. STARTER CARDS & GREETING BADGES */
+body.light-theme [class*="bg-[#0d0d10]"],
+body.light-theme [class*="bg-[#0e0e12]"],
+body.light-theme [class*="bg-[#0a0a0c]"] {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+body.light-theme [class*="bg-[#0d0d10]"]:hover {
+  background-color: #e4e4e7 !important;
+}
+
+body.light-theme [class*="bg-[#0d0d10]"] .text-white {
+  color: #18181b !important;
+}
+
+/* 6. MESSAGE FEED & INPUT CAPSULE */
+/* Force both user and assistant turn backgrounds to uniform clean white in light mode */
+body.light-theme main,
+body.light-theme [class*="bg-zinc-900/20"],
+body.light-theme .contain-message,
+body.light-theme [class*="contain-message"] {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+}
+
+/* Ensure header label and follow-up text have sharp dark contrast in light mode */
+body.light-theme [class*="bg-zinc-900/20"] .text-neutral-400,
+body.light-theme [class*="bg-zinc-900/20"] [class*="text-zinc-"],
+body.light-theme .contain-message .text-neutral-400,
+body.light-theme .text-zinc-300,
+body.light-theme .text-zinc-400,
+body.light-theme .text-zinc-500 {
+  color: #27272a !important;
+}
+
+body.light-theme [class*="bg-zinc-900/20"] [class*="border-zinc-800"],
+body.light-theme .contain-message [class*="border-zinc-800"] {
+  border-color: #e4e4e7 !important;
+}
+
+body.light-theme .prose-noir,
+body.light-theme .prose-noir p,
+body.light-theme .prose-noir span,
+body.light-theme .prose-noir li {
+  color: #27272a !important;
+}
+
+body.light-theme .prose-noir strong,
+body.light-theme .prose-noir b,
+body.light-theme .prose-strong-highlight,
+body.light-theme .prose-noir strong span,
+body.light-theme .prose-strong-highlight span {
+  color: #000000 !important;
+  font-weight: 800 !important;
+  -webkit-text-stroke: 0.25px currentColor;
+  text-decoration: none;
+}
+
+/* =========================================================
+   THINKING PILL & ACCORDION DRAWER IN LIGHT MODE
+   ========================================================= */
+
+/* 1. Collapsed & Active Thinking Pill */
+body.light-theme [class*="bg-zinc-800/60"],
+body.light-theme [class*="bg-zinc-850"] {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+  color: #27272a !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme [class*="bg-zinc-800/60"]:hover {
+  background-color: #ececee !important;
+  border-color: #d4d4d8 !important;
+}
+
+body.light-theme [class*="bg-zinc-800/60"] span,
+body.light-theme [class*="bg-zinc-800/60"] svg {
+  color: #27272a !important;
+}
+
+/* 2. Expanded Reasoning Thought Drawer & Inner Badges */
+body.light-theme [class*="bg-zinc-900/90"],
+body.light-theme [class*="bg-zinc-900"]:not(.contain-message):not(.primary-voice-send-btn):not(.kimi-pill-active):not(.kz-brand-badge),
+body.light-theme [class*="bg-[#151518]"],
+body.light-theme [class*="bg-[#15151f]"],
+body.light-theme [class*="bg-[#14141d]"],
+body.light-theme [class*="bg-[#121216]"],
+body.light-theme [class*="bg-[#111216]"],
+body.light-theme [class*="bg-[#101014]"],
+body.light-theme [class*="bg-[#0e0e12]"],
+body.light-theme [class*="bg-[#0e0e14]"],
+body.light-theme [class*="bg-[#0d0d12]"],
+body.light-theme [class*="bg-[#0c0c10]"],
+body.light-theme [class*="bg-[#09090b]"]:not(main):not(.contain-message) {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+/* Keep main canvas and message rows pure white even if utility classes match above */
+body.light-theme main,
+body.light-theme .contain-message,
+body.light-theme .contain-message[class*="bg-"] {
+  background-color: #ffffff !important;
+}
+
+body.light-theme [class*="bg-[#151518]"] p,
+body.light-theme [class*="bg-[#151518]"] span,
+body.light-theme [class*="bg-[#151518]"] h4,
+body.light-theme [class*="bg-[#151518]"] div {
+  color: #27272a !important;
+}
+
+body.light-theme [class*="bg-[#151518]"] [class*="text-amber-"],
+body.light-theme [class*="bg-[#151518]"] h4[class*="text-amber-"] {
+  color: #b45309 !important;
+}
+
+/* 3. Follow-up Arrow and Text in Light Mode */
+body.light-theme .text-zinc-300,
+body.light-theme .text-zinc-400 {
+  color: #27272a !important;
+}
+
+body.light-theme .text-zinc-500 {
+  color: #71717a !important;
+}
+
+body.light-theme .text-zinc-600,
+body.light-theme .text-zinc-700 {
+  color: #3f3f46 !important;
+}
+
+/* 4. Dropdown menus and Popovers in Day Mode */
+body.light-theme [class*="fixed"][class*="rounded-2xl"][class*="bg-"] {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme [class*="fixed"][class*="rounded-2xl"] [class*="bg-[#14141d]"],
+body.light-theme [class*="fixed"][class*="rounded-2xl"] [class*="bg-[#15151f]"] {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+}
+
+body.light-theme [class*="fixed"][class*="rounded-2xl"] [class*="bg-[#09090d]"] {
+  background-color: #e4e4e7 !important;
+}
+
+body.light-theme [class*="fixed"][class*="rounded-2xl"] button {
+  color: #27272a !important;
+}
+
+body.light-theme [class*="fixed"][class*="rounded-2xl"] button:hover {
+  background-color: #e4e4e7 !important;
+  color: #09090b !important;
+}
+
+body.light-theme [class*="fixed"][class*="rounded-2xl"] span,
+body.light-theme [class*="fixed"][class*="rounded-2xl"] p {
+  color: #27272a !important;
+}
+
+body.light-theme [class*="fixed"][class*="rounded-2xl"] div[class*="border-b"] {
+  border-color: #e4e4e7 !important;
+  color: #71717a !important;
+}
+
+body.light-theme [class*="contain-message"] button:hover,
+body.light-theme .contain-message button:hover,
+body.light-theme [class*="bg-zinc-900/20"] button:hover {
+  background-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+body.light-theme .chat-input-container-fluid {
+  background-color: #f4f4f5 !important;
+  border: 1px solid #e4e4e7 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme .chat-input-container-fluid textarea {
+  color: #18181b !important;
+}
+
+/* Custom Neutral Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Scrollbar-hide utility for horizontal pill strips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* Disable paint containment to prevent mobile Chrome GPU tile eviction flashes on long chapters */
+.contain-message {
+  contain: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Strictly isolated text selection boundary per message turn so mobile selection handles never bleed into the whole chat */
+.message-prose-selectable,
+.message-prose-selectable p,
+.message-prose-selectable li,
+.message-prose-selectable ul,
+.message-prose-selectable ol,
+.message-prose-selectable blockquote,
+.message-prose-selectable h1,
+.message-prose-selectable h2,
+.message-prose-selectable h3,
+.message-prose-selectable h4,
+.message-prose-selectable strong,
+.message-prose-selectable b,
+.message-prose-selectable em,
+.message-prose-selectable span:not(.select-none),
+.message-prose-selectable code,
+.message-prose-selectable pre,
+.message-prose-selectable td,
+.message-prose-selectable th {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
+.message-prose-selectable .select-none,
+.message-prose-selectable .select-none * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+.message-prose-selectable ::selection {
+  background-color: rgba(161, 161, 170, 0.34);
+  color: #ffffff;
+}
+
+body.light-theme .message-prose-selectable ::selection,
+html.light .message-prose-selectable ::selection {
+  background-color: rgba(39, 39, 42, 0.16);
+  color: #09090b;
+}
+
+/* Markdown prose for Noir aesthetic & Night Reading Comfort */
+:root {
+  --kz-prose-size: 17px;
+  --kz-prose-leading: 1.62;
+}
+
+.prose-noir {
+  color: #d4d4d8;
+  font-size: var(--kz-prose-size, 17px);
+  line-height: var(--kz-prose-leading, 1.62);
+  letter-spacing: 0.005em;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.prose-noir p,
+.prose-noir li,
+.prose-noir ul,
+.prose-noir ol,
+.prose-noir blockquote {
+  font-size: var(--kz-prose-size, 17px);
+  line-height: var(--kz-prose-leading, 1.62);
+}
+
+.prose-noir p {
+  margin-bottom: 1rem;
+}
+
+.prose-noir p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-noir h1,
+.prose-noir h2,
+.prose-noir h3,
+.prose-noir h4 {
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-top: 1.4em;
+  margin-bottom: 0.6em;
+}
+
+.prose-noir h1 { font-size: calc(var(--kz-prose-size, 18.5px) * 1.38); }
+.prose-noir h2 { font-size: calc(var(--kz-prose-size, 18.5px) * 1.24); }
+.prose-noir h3 { font-size: calc(var(--kz-prose-size, 18.5px) * 1.12); }
+
+.prose-noir strong,
+.prose-noir b,
+.prose-strong-highlight {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  -webkit-text-stroke: 0.25px currentColor;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+}
+
+.prose-noir em {
+  color: #d4d4d8;
+  font-style: italic;
+}
+
+.prose-noir blockquote {
+  border-left: 2px solid #3f3f46;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #a1a1aa;
+  font-style: italic;
+  background: #0a0a0c;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-radius: 0 4px 4px 0;
+}
+
+.prose-noir ul {
+  list-style-type: disc;
+  padding-left: 1.35rem;
+  margin: 0.85rem 0;
+}
+
+.prose-noir ol {
+  list-style-type: decimal;
+  padding-left: 1.35rem;
+  margin: 0.85rem 0;
+}
+
+.prose-noir li {
+  margin-bottom: 0.45rem;
+}
+
+.prose-noir code:not(pre code) {
+  background: #18181b;
+  border: 1px solid #27272a;
+  color: #ffffff;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.85em;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.prose-noir pre {
+  background: #09090b;
+  border: 1px solid #222225;
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.prose-noir pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #e4e4e7;
+  font-size: 0.875rem;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.6;
+}
+
+.prose-noir hr {
+  border: none;
+  border-top: 1px solid #222225;
+  margin: 1.5rem 0;
+}
+
+/* Day Mode / Light Theme Complete Overrides for .prose-noir & Input Focus */
+body.light-theme .input-noir-focused,
+html.light .input-noir-focused {
+  border-color: #a1a1aa !important;
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(24, 24, 27, 0.06) !important;
+}
+
+body.light-theme ::-webkit-scrollbar-thumb,
+html.light ::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+}
+body.light-theme ::-webkit-scrollbar-thumb:hover,
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+}
+
+body.light-theme .prose-noir,
+html.light .prose-noir {
+  color: #18181b !important;
+}
+
+body.light-theme .prose-noir p,
+body.light-theme .prose-noir li,
+body.light-theme .prose-noir ul,
+body.light-theme .prose-noir ol,
+html.light .prose-noir p,
+html.light .prose-noir li {
+  color: #18181b !important;
+}
+
+body.light-theme .prose-noir h1,
+body.light-theme .prose-noir h2,
+body.light-theme .prose-noir h3,
+body.light-theme .prose-noir h4,
+html.light .prose-noir h1,
+html.light .prose-noir h2,
+html.light .prose-noir h3,
+html.light .prose-noir h4 {
+  color: #09090b !important;
+}
+
+body.light-theme .prose-noir strong,
+body.light-theme .prose-noir b,
+body.light-theme .prose-strong-highlight,
+html.light .prose-noir strong,
+html.light .prose-noir b,
+html.light .prose-strong-highlight {
+  color: #09090b !important;
+  font-weight: 700 !important;
+  -webkit-text-stroke: 0px transparent !important;
+}
+
+body.light-theme .prose-noir em,
+html.light .prose-noir em {
+  color: #27272a !important;
+  font-style: italic;
+}
+
+body.light-theme .prose-noir blockquote,
+html.light .prose-noir blockquote {
+  background: #f4f4f5 !important;
+  border-left: 3px solid #a1a1aa !important;
+  color: #3f3f46 !important;
+}
+
+body.light-theme .prose-noir code:not(pre code),
+html.light .prose-noir code:not(pre code) {
+  background: #f4f4f5 !important;
+  border: 1px solid #e4e4e7 !important;
+  color: #09090b !important;
+}
+
+body.light-theme .prose-noir pre,
+html.light .prose-noir pre {
+  background: #f8f8fa !important;
+  border: 1px solid #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+body.light-theme .prose-noir pre code,
+html.light .prose-noir pre code {
+  color: #18181b !important;
+}
+
+body.light-theme .prose-noir hr,
+html.light .prose-noir hr {
+  border-top: 1px solid #e4e4e7 !important;
+}
+
+/* 120Hz Hardware-Accelerated Performance without permanent will-change layer thrashing */
+.gpu-layer {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* 3D Grimoire Book Search Animation Keyframes */
+@keyframes flipPage {
+  0% { transform: rotateY(0deg); opacity: 0.9; }
+  50% { transform: rotateY(-90deg); opacity: 1; }
+  100% { transform: rotateY(-180deg); opacity: 0; }
+}
+
+@keyframes bookGlow {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.4)); }
+  50% { filter: drop-shadow(0 0 8px rgba(147, 197, 253, 0.8)); }
+}
+
+.animate-flip-page {
+  transform-origin: left center;
+  animation: flipPage 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.animate-flip-page-delayed {
+  transform-origin: left center;
+  animation: flipPage 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation-delay: 0.38s;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.animate-book-glow {
+  animation: bookGlow 2.2s ease-in-out infinite;
+}
+
+/* Runic Seal & Lore Scanner Keyframes (Prismatic Resonance) */
+@keyframes runeResonance {
+  0%, 100% { transform: scale(0.96); filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4)); opacity: 0.85; }
+  50% { transform: scale(1.05); filter: drop-shadow(0 0 16px rgba(245, 158, 11, 0.95)); opacity: 1; }
+}
+
+@keyframes glyphFlicker {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+@keyframes runeSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes runePulseGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.85));
+    transform: scale(1.05);
+  }
+}
+
+.animate-rune-resonance {
+  animation: runeResonance 2.4s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+.animate-glyph-flicker {
+  animation: glyphFlicker 1.8s ease-in-out infinite;
+}
+
+.animate-rune-spin {
+  animation: runeSpin 4s linear infinite;
+  transform-origin: center center;
+}
+
+.animate-rune-glow {
+  animation: runePulseGlow 2s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+.animate-scan-beam {
+  animation: scanBeam 2.8s ease-in-out infinite;
+}
+
+/* Living Ink Drop & Ripple Keyframes */
+@keyframes inkDropFall {
+  0% { transform: translateY(-6px) scale(0.6); opacity: 0; }
+  50% { opacity: 1; transform: translateY(0px) scale(1); }
+  100% { transform: translateY(0px) scale(1); opacity: 1; }
+}
+
+@keyframes inkRippleSpread {
+  0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(1.05); opacity: 0; }
+}
+
+@keyframes inkAuraFloat {
+  0%, 100% { opacity: 0.5; transform: scale(0.95); }
+  50% { opacity: 0.9; transform: scale(1.05); }
+}
+
+.animate-ink-drop {
+  animation: inkDropFall 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.animate-ink-ripple-1 {
+  animation: inkRippleSpread 2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+}
+
+.animate-ink-ripple-2 {
+  animation: inkRippleSpread 2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+  animation-delay: 0.7s;
+}
+
+.animate-ink-aura {
+  animation: inkAuraFloat 3s ease-in-out infinite;
+}
+
+/* Book Binding & Latch Clasp Keyframes */
+@keyframes bookSnapShut {
+  0% { transform: perspective(400px) rotateY(-25deg); }
+  100% { transform: perspective(400px) rotateY(0deg); }
+}
+
+@keyframes latchClick {
+  0% { transform: scale(0.7); opacity: 0; }
+  70% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes epubFloatSuccess {
+  0% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-4px) scale(1.05); filter: drop-shadow(0 4px 10px rgba(167, 139, 250, 0.6)); }
+  100% { transform: translateY(0) scale(1); filter: none; }
+}
+
+.animate-book-snap-shut {
+  animation: bookSnapShut 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  transform-origin: left center;
+}
+
+.animate-latch-click {
+  animation: latchClick 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s both;
+}
+
+.animate-epub-float-success {
+  animation: epubFloatSuccess 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Fluid Spring Transitions & Cinematic Modal Openings */
+@keyframes fluidSheetIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes backdropFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.modal-backdrop-fluid {
+  animation: backdropFadeIn 0.25s ease-out forwards;
+}
+
+.modal-sheet-fluid {
+  animation: fluidSheetIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* PS5 Pro / Gamepad Spatial Focus Ring Styles - Only active when navigating via Gamepad */
+body.gamepad-active button:focus-visible,
+body.gamepad-active a:focus-visible,
+body.gamepad-active textarea:focus-visible,
+body.gamepad-active input:focus-visible,
+body.gamepad-active [tabindex="0"]:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.8) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4) !important;
+}
+
+textarea:focus, input:focus {
+  outline: none !important;
+}
+
+/* Hardware-accelerated fluid input container expansion */
+.chat-input-container-fluid {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Lightweight Hardware-Accelerated Runic Filament (Zero GPU strain, rests after 2 cycles) */
+@keyframes smoothRunicGlow {
+  0%, 100% {
+    opacity: 0.75;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scaleX(1.01);
+  }
+}
+
+.runic-aura-divider {
+  position: relative;
+  height: 1.5px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, #f59e0b 20%, #fbbf24 50%, #f59e0b 80%, transparent);
+  opacity: 0.8;
+}
+
+.runic-aura-divider::before,
+.runic-aura-divider::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  width: 32px;
+  height: 3.5px;
+  background: radial-gradient(circle, #fef08a 0%, #f59e0b 60%, transparent 100%);
+  border-radius: 9999px;
+  opacity: 0.85;
+}
+
+.runic-aura-divider::before {
+  left: 10%;
+}
+
+.runic-aura-divider::after {
+  right: 10%;
+}
+
+/* =========================================================
+   MOBILE 120HZ ULTRA-FLUID PERFORMANCE DIRECTIVES
+   ========================================================= */
+@media (max-width: 768px) {
+  /* 1. Eliminate 300ms tap delay on interactive controls while keeping native touch-selection handles smooth on prose */
+  * {
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  button, input, textarea, a, label, summary, [role="button"] {
+    touch-action: manipulation !important;
+  }
+
+  /* 2. Native kinetic momentum scrolling on iOS and Android */
+  .smooth-scroll,
+  main,
+  aside,
+  .modal-sheet-fluid {
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    scroll-behavior: auto !important; /* Disables artificial smooth easing that fights finger momentum */
+  }
+
+  /* 3. Drop expensive real-time GPU blurs that drop frames on mobile */
+  .modal-backdrop-fluid,
+  .chat-input-container-fluid,
+  header {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* 4. Disable paint containment on mobile so Chrome never flashes black tiles when scrolling long text */
+  .contain-message {
+    contain: none !important;
+  }
+}
+
+/* =========================================================
+   SLEEK MINIMALIST NOIR SCROLLBARS FOR DESKTOP
+   ========================================================= */
+@media (min-width: 769px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+  }
+
+  body.light-theme ::-webkit-scrollbar-thumb {
+    background: #d4d4d8;
+  }
+  body.light-theme ::-webkit-scrollbar-thumb:hover {
+    background: #a1a1aa;
+  }
+}
+
+/* =========================================================
+   META QUEST & SPATIAL BROWSER OPTIMIZATIONS
+   ========================================================= */
+@media screen and (min-width: 1024px) {
+  /* Enhance sub-pixel font antialiasing for virtual floating monitors */
+  body {
+    -webkit-font-smoothing: subpixel-antialiased;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* Specific styling when opened in Meta Quest Browser */
+@supports (-webkit-touch-callout: none) or (display: contents) {
+  /* High-contrast reading mode for virtual screens to eliminate optical glare */
+  .prose-noir p,
+  .prose-noir span,
+  .prose-noir li {
+    letter-spacing: 0.01em;
+  }
+
+  /* Laser cursor hover comfort: soft elevation instead of aggressive scaling */
+  button:hover {
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+}
+
+/* Laser pointer hover stabilization: deliberate hover delay to prevent VR flickering */
+@media (hover: hover) and (pointer: fine) {
+  .chat-input-container-fluid button,
+  header button {
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+}
+
+/* =========================================================
+   STRICT HORIZONTAL OVERFLOW LOCK
+   ========================================================= */
+html, body, #root {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  position: relative;
+}
+
+header, main {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: clip;
+}
+
+/* =========================================================
+   EXPLICIT LIGHT MODE BADGE SAFEGUARDS
+   ========================================================= */
+/* Force clean light badges inside header dropdown in light mode */
+body.light-theme header [class*="rounded-full"][class*="bg-zinc-"],
+body.light-theme header [class*="rounded-md"][class*="bg-zinc-"],
+body.light-theme header [class*="rounded-lg"][class*="bg-zinc-"] {
+  background-color: #e4e4e7 !important;
+  color: #18181b !important;
+  border-color: #d4d4d8 !important;
+}
+
+body.light-theme header [class*="bg-[#181820]"],
+body.light-theme header [class*="bg-[#121216]"],
+body.light-theme header [class*="bg-[#141418]"] {
+  background-color: #f4f4f5 !important;
+  color: #18181b !important;
+}
+
+/* =========================================================
+   UNIVERSAL LIGHT MODE POPOVER SHIELD
+   ========================================================= */
+/* Force all bottom input floating popovers to clean light cards */
+body.light-theme [class*="bottom-full"] {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme [class*="bottom-full"] [class*="border-b"],
+body.light-theme [class*="bottom-full"] [class*="border-t"] {
+  border-color: #e4e4e7 !important;
+}
+
+body.light-theme [class*="bottom-full"] button:hover {
+  background-color: #f4f4f5 !important;
+  color: #18181b !important;
+}
+
+body.light-theme [class*="bottom-full"] .text-white {
+  color: #18181b !important;
+}
+
+body.light-theme [class*="bottom-full"] .text-\[\#d4d4d8\],
+body.light-theme [class*="bottom-full"] .text-\[\#71717a\] {
+  color: #71717a !important;
+}
+
+/* Light mode styling for cadence card items inside popover */
+body.light-theme [class*="bottom-full"] [class*="bg-zinc-50"] {
+  background-color: #f9f9fb !important;
+  border-color: #e4e4e7 !important;
+}
+
+/* Force menu option titles in bottom popovers to dark text in Light Mode while preserving red/amber/emerald semantic action colors */
+body.light-theme [class*="bottom-full"] .font-semibold:not([class*="text-red-"]):not([class*="text-amber-"]):not([class*="text-emerald-"]),
+body.light-theme [class*="bottom-full"] [class*="font-semibold"]:not([class*="text-red-"]):not([class*="text-amber-"]):not([class*="text-emerald-"]),
+body.light-theme [class*="bottom-full"] button:not([class*="text-red-"]):not([class*="bg-red-"]) span:not([class*="text-red-"]):not([class*="text-amber-"]):not([class*="text-emerald-"]),
+body.light-theme [class*="bottom-full"] button:not([class*="text-red-"]):not([class*="bg-red-"]) div:not([class*="text-red-"]):not([class*="text-amber-"]):not([class*="text-emerald-"]) {
+  color: #18181b !important;
+}
+
+body.light-theme [class*="bottom-full"] [class*="text-\[\#71717a\]"],
+body.light-theme [class*="bottom-full"] .font-mono:not([class*="text-red-"]):not([class*="text-amber-"]):not([class*="text-emerald-"]) {
+  color: #71717a !important;
+}
+
+/* Force icon boxes inside bottom floating popovers to clean light surfaces */
+body.light-theme [class*="bottom-full"] [class*="w-6"][class*="h-6"] {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+}
+
+body.light-theme [class*="bottom-full"] [class*="w-6"][class*="h-6"] svg {
+  opacity: 0.9 !important;
+}
+
+/* Day Mode Harmonization for Greeting & Bottom Pills */
+body.light-theme .greeting-title-text {
+  color: #18181b !important;
+}
+
+body.light-theme .kimi-pill-btn {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+  color: #52525b !important;
+}
+
+body.light-theme .kimi-pill-btn:hover {
+  background-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+body.light-theme .kimi-pill-btn.kimi-pill-active {
+  background-color: #18181b !important;
+  border-color: #18181b !important;
+  color: #ffffff !important;
+}
+
+body.light-theme .kimi-pill-btn.kimi-pill-active span,
+body.light-theme .kimi-pill-btn.kimi-pill-active svg {
+  color: #ffffff !important;
+}
+
+body.light-theme .kimi-pill-btn.kimi-pill-active span.font-mono {
+  color: #d4d4d8 !important;
+}
+
+body.light-theme .primary-voice-send-btn {
+  background-color: #18181b !important;
+  color: #ffffff !important;
+}
+
+body.light-theme .primary-voice-send-btn span,
+body.light-theme .primary-voice-send-btn svg {
+  color: #ffffff !important;
+}
+
+body.light-theme .chat-input-container-fluid button[class*="bg-[#1e1e28]"] {
+  background-color: #e4e4e7 !important;
+  color: #27272a !important;
+}
+
+/* Force Visión badge to clean readable pill in Light Mode */
+body.light-theme [class*="VisionLensIcon"] {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+  color: #27272a !important;
+}
+
+/* Stable Message Container (Disabled content-visibility:auto to prevent mobile scroll height jitter/shaking) */
+.message-virtualized {
+  content-visibility: visible;
+}
+
+/* GPU-Accelerated Hourglass Animations (Pensar más) - Rests after 2 cycles when idle, infinite while streaming */
+@keyframes hourglassFlip {
+  0%, 75% { transform: rotate(0deg); }
+  90%, 100% { transform: rotate(180deg); }
+}
+@keyframes sandDrainTop {
+  0% { transform: scaleY(1); opacity: 0.95; }
+  75%, 100% { transform: scaleY(0.15); opacity: 0.25; }
+}
+@keyframes sandFillBottom {
+  0% { transform: scaleY(0.15); opacity: 0.35; }
+  75%, 100% { transform: scaleY(1); opacity: 0.95; }
+}
+@keyframes sandStreamDrop {
+  0%, 72% { opacity: 0.9; stroke-dashoffset: 0; }
+  75%, 100% { opacity: 0; stroke-dashoffset: -6; }
+}
+.animate-hourglass-flip {
+  animation: hourglassFlip 3.2s cubic-bezier(0.65, 0, 0.35, 1) 2;
+  transform-origin: center center;
+}
+.animate-sand-top {
+  animation: sandDrainTop 3.2s ease-in-out 2;
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+.animate-sand-bottom {
+  animation: sandFillBottom 3.2s ease-in-out 2;
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+.animate-sand-stream {
+  animation: sandStreamDrop 3.2s linear 2;
+  transform-box: fill-box;
+  transform-origin: top center;
+}
+.hourglass-streaming,
+.hourglass-streaming .animate-sand-top,
+.hourglass-streaming .animate-sand-bottom,
+.hourglass-streaming .animate-sand-stream {
+  animation-iteration-count: infinite !important;
+}
+
+/* Progressive ChatGPT-style Title Dissolve while Message is Active/Streaming */
+@keyframes chatTitleProgressiveFade {
+  0% {
+    -webkit-mask-position: 0% 0%;
+    mask-position: 0% 0%;
+  }
+  55% {
+    -webkit-mask-position: 42% 0%;
+    mask-position: 42% 0%;
+  }
+  100% {
+    -webkit-mask-position: 100% 0%;
+    mask-position: 100% 0%;
+  }
+}
+
+.chat-title-streaming-fade {
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 33.33%,
+    rgba(0, 0, 0, 0.12) 45%,
+    rgba(0, 0, 0, 0.10) 56%,
+    rgba(0, 0, 0, 1) 66.67%,
+    rgba(0, 0, 0, 1) 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 33.33%,
+    rgba(0, 0, 0, 0.12) 45%,
+    rgba(0, 0, 0, 0.10) 56%,
+    rgba(0, 0, 0, 1) 66.67%,
+    rgba(0, 0, 0, 1) 100%
+  );
+  -webkit-mask-size: 300% 100%;
+  mask-size: 300% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: chatTitleProgressiveFade 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: mask-position, -webkit-mask-position;
+}
+
+/* ChatGPT-style Progressive Wave & Materialize Animation when Sending a User Message */
+@keyframes userMessageMaskSweep {
+  0% {
+    -webkit-mask-position: 100% 0%;
+    mask-position: 100% 0%;
+  }
+  50% {
+    -webkit-mask-position: 45% 0%;
+    mask-position: 45% 0%;
+  }
+  100% {
+    -webkit-mask-position: 0% 0%;
+    mask-position: 0% 0%;
+  }
+}
+
+.user-message-progressive-wave {
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 36%,
+    rgba(0, 0, 0, 0.22) 50%,
+    rgba(0, 0, 0, 0.16) 58%,
+    rgba(0, 0, 0, 1) 72%,
+    rgba(0, 0, 0, 1) 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 36%,
+    rgba(0, 0, 0, 0.22) 50%,
+    rgba(0, 0, 0, 0.16) 58%,
+    rgba(0, 0, 0, 1) 72%,
+    rgba(0, 0, 0, 1) 100%
+  );
+  -webkit-mask-size: 300% 100%;
+  mask-size: 300% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: userMessageMaskSweep 1.15s cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
+  will-change: mask-position, -webkit-mask-position;
+}
+
+/* Smooth progressive paragraph & token entrance during live streaming */
+@keyframes streamingTailSoftFade {
+  0% {
+    opacity: 0.35;
+    transform: translateY(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.prose-streaming-live p:last-of-type,
+.prose-streaming-live li:last-of-type,
+.prose-streaming-live blockquote:last-of-type {
+  animation: streamingTailSoftFade 0.24s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Mobile Thermal & Battery Guard: Replace continuous mask-position and box-shadow repaints with static zero-cost styles on touch screens */
+@media (max-width: 768px) {
+  .chat-title-streaming-fade {
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  .kz-composer-streaming-aura {
+    animation: none !important;
+    border-color: rgba(245, 158, 11, 0.45) !important;
+  }
+
+  .animate-orb-float,
+  .animate-spin-slow {
+    animation: none !important;
+  }
+}

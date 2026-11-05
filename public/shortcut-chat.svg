@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="40" fill="#09090b"/>
+  <rect x="8" y="8" width="176" height="176" rx="32" fill="#121216" stroke="#27272a" stroke-width="3"/>
+  <circle cx="96" cy="96" r="54" fill="#181820" stroke="#a1a1aa" stroke-width="2"/>
+  <!-- Pen / Manuscript edit icon -->
+  <path d="M74 122 L70 138 L86 134 L126 94 L114 82 Z" fill="#ffffff"/>
+  <path d="M128 92 L116 80 L124 72 C127 69 132 69 135 72 L136 73 C139 76 139 81 136 84 Z" fill="#e4e4e7"/>
+  <line x1="66" y1="142" x2="142" y2="142" stroke="#52525b" stroke-width="3" stroke-linecap="round"/>
+</svg>

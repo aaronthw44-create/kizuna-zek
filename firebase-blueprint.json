@@ -1,0 +1,214 @@
+{
+  "entities": {
+    "chat": {
+      "title": "Chat",
+      "description": "Conversation between user and assistant",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the chat"
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the owner user"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the conversation"
+        },
+        "folderId": {
+          "type": "string",
+          "description": "Optional folder id"
+        },
+        "messages": {
+          "type": "array",
+          "description": "List of messages in conversation"
+        },
+        "sessionSummary": {
+          "type": "string",
+          "description": "Rolling summary of older messages"
+        },
+        "selectedLoreFileIds": {
+          "type": "array",
+          "description": "Selected lore file IDs for this chat"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Creation timestamp in milliseconds"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Last update timestamp in milliseconds"
+        }
+      },
+      "required": ["id", "userId", "title"]
+    },
+    "loreFile": {
+      "title": "LoreFile",
+      "description": "Lore document or manuscript chapter stored in Lore Storage",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the lore file"
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the owner user"
+        },
+        "folderId": {
+          "type": "string",
+          "description": "Folder or workspace ID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the lore document"
+        },
+        "filename": {
+          "type": "string",
+          "description": "Filename of the document"
+        },
+        "content": {
+          "type": "string",
+          "description": "Full text content of the document"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "Type of file (md, txt, pdf, docx, image)"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Last update timestamp in milliseconds"
+        }
+      },
+      "required": ["id", "userId", "title"]
+    },
+    "folder": {
+      "title": "Folder",
+      "description": "Workspace or narrative arc folder",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the folder"
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the owner user"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the folder/project"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the folder"
+        },
+        "systemPrompt": {
+          "type": "string",
+          "description": "Folder-specific system prompt"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Last update timestamp in milliseconds"
+        }
+      },
+      "required": ["id", "userId", "name"]
+    },
+    "workspaceSettings": {
+      "title": "WorkspaceSettings",
+      "description": "User persistent memories, author profile, persona directives, and provider API keys",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the owner user"
+        },
+        "alibabaApiKey": {
+          "type": "string",
+          "description": "Alibaba Cloud Model Studio DashScope API Key"
+        },
+        "customApiKey": {
+          "type": "string",
+          "description": "Custom / NVIDIA NIM API Key"
+        },
+        "geminiApiKey": {
+          "type": "string",
+          "description": "Google Gemini API Key"
+        },
+        "tavilyApiKey": {
+          "type": "string",
+          "description": "Tavily Search API Key"
+        },
+        "provider": {
+          "type": "string",
+          "description": "Active model provider (alibaba, gemini, custom)"
+        },
+        "alibabaModel": {
+          "type": "string",
+          "description": "Active Alibaba / Qwen model"
+        },
+        "customModel": {
+          "type": "string",
+          "description": "Active custom / NVIDIA model"
+        },
+        "geminiModel": {
+          "type": "string",
+          "description": "Active Gemini model"
+        },
+        "favoriteAlibabaModelIds": {
+          "type": "array",
+          "description": "Pinned Alibaba models"
+        },
+        "favoriteModelIds": {
+          "type": "array",
+          "description": "Pinned custom models"
+        },
+        "autoModelRouting": {
+          "type": "boolean",
+          "description": "Automatic model routing toggle"
+        },
+        "memories": {
+          "type": "array",
+          "description": "Persistent smart memories"
+        },
+        "userProfile": {
+          "type": "object",
+          "description": "Author nickname, occupation, and bio"
+        },
+        "personalityConfig": {
+          "type": "object",
+          "description": "Warmth, enthusiasm, formatting, and custom instructions"
+        },
+        "globalSystemPrompt": {
+          "type": "string",
+          "description": "Global system directive"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Last update timestamp in milliseconds"
+        }
+      },
+      "required": ["userId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/chats/{chatId}": {
+      "schema": "chat",
+      "description": "Stores user chat conversations"
+    },
+    "/users/{userId}/loreFiles/{loreId}": {
+      "schema": "loreFile",
+      "description": "Stores user lore documents and manuscripts"
+    },
+    "/users/{userId}/folders/{folderId}": {
+      "schema": "folder",
+      "description": "Stores user project folders and narrative arcs"
+    },
+    "/users/{userId}/settings/{docId}": {
+      "schema": "workspaceSettings",
+      "description": "Stores user persistent memories, profile, and persona settings"
+    }
+  }
+}

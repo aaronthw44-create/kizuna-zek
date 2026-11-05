@@ -1,0 +1,88 @@
+{
+  "id": "/",
+  "name": "Kizuna-Zek",
+  "short_name": "Kizuna-Zek",
+  "description": "Noir Monochrome AI Workspace & Novel Writing Environment with Lore Architecture and Session Media Gallery.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Llamada Omni",
+      "short_name": "Llamada",
+      "description": "Iniciar llamada interactiva de voz manos libres con Kizuna-Zek",
+      "url": "/?action=voice",
+      "icons": [
+        {
+          "src": "/shortcut-voice.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        },
+        {
+          "src": "/shortcut-voice.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Nueva Escena",
+      "short_name": "Escribir",
+      "description": "Comenzar un nuevo borrador de manuscrito o capítulo",
+      "url": "/?action=new",
+      "icons": [
+        {
+          "src": "/shortcut-chat.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        },
+        {
+          "src": "/shortcut-chat.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Bóveda de Lore",
+      "short_name": "Bóveda",
+      "description": "Consultar fichas canónicas y auditoría",
+      "url": "/?action=lore",
+      "icons": [
+        {
+          "src": "/shortcut-lore.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        },
+        {
+          "src": "/shortcut-lore.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ]
+}

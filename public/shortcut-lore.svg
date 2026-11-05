@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="40" fill="#09090b"/>
+  <rect x="8" y="8" width="176" height="176" rx="32" fill="#121216" stroke="#27272a" stroke-width="3"/>
+  <circle cx="96" cy="96" r="54" fill="#181820" stroke="#8b5cf6" stroke-width="2"/>
+  <!-- Vault / Gem / Codex Shield -->
+  <path d="M96 62 L128 78 L128 108 C128 126 114 138 96 144 C78 138 64 126 64 108 L64 78 Z" fill="none" stroke="#a78bfa" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="96" cy="100" r="10" fill="#c4b5fd"/>
+  <line x1="96" y1="110" x2="96" y2="122" stroke="#c4b5fd" stroke-width="3" stroke-linecap="round"/>
+</svg>

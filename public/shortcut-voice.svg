@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="40" fill="#09090b"/>
+  <rect x="8" y="8" width="176" height="176" rx="32" fill="#121216" stroke="#27272a" stroke-width="3"/>
+  <circle cx="96" cy="96" r="54" fill="#181820" stroke="#3b82f6" stroke-width="2"/>
+  <!-- Phone handset / Soundwave icon -->
+  <path d="M72 70 C72 65 76 60 82 60 L86 60 C90 60 93 63 94 67 L96 76 C97 80 95 83 92 85 L88 88 C93 98 102 107 112 112 L115 108 C117 105 120 103 124 104 L133 106 C137 107 140 110 140 114 L140 118 C140 124 135 128 130 128 C98 128 72 102 72 70 Z" fill="#60a5fa"/>
+  <circle cx="128" cy="68" r="4" fill="#93c5fd"/>
+  <circle cx="140" cy="78" r="3" fill="#93c5fd" opacity="0.7"/>
+</svg>

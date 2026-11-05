@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Connection test path
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // User chats isolation
+    match /users/{userId}/chats/{chatId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
+    }
+
+    // User lore files isolation
+    match /users/{userId}/loreFiles/{loreId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
+    }
+
+    // User folders isolation
+    match /users/{userId}/folders/{folderId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
+    }
+
+    // User memories, profile, and persona settings isolation
+    match /users/{userId}/settings/{docId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
+    }
+  }
+}
